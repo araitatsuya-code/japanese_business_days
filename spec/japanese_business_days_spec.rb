@@ -5,7 +5,10 @@ RSpec.describe JapaneseBusinessDays do
     expect(JapaneseBusinessDays::VERSION).not_to be nil
   end
 
-  it "does something useful" do
-    expect(false).to eq(true)
+  it "loads core interfaces successfully" do
+    expect(JapaneseBusinessDays::Configuration).to be_a(Class)
+    expect(JapaneseBusinessDays::Holiday).to be_a(Class)
+    expect(JapaneseBusinessDays::HolidayCalculator).to be_a(Class)
+    expect(JapaneseBusinessDays::BusinessDayCalculator).to be_a(Class)
   end
 end

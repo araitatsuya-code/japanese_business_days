@@ -37,14 +37,28 @@ module JapaneseBusinessDays
 
   # 設定クラス
   class Configuration
-    attr_accessor additional_holidays: Array[Date]
-    attr_accessor additional_business_days: Array[Date]
-    attr_accessor weekend_days: Array[Integer]
+    VALID_WEEKDAYS: Range[Integer]
+
+    attr_reader additional_holidays: Array[Date]
+    attr_reader additional_business_days: Array[Date]
+    attr_reader weekend_days: Array[Integer]
 
     def initialize: () -> void
+    def additional_holidays=: (Array[Date] holidays) -> void
+    def additional_business_days=: (Array[Date] business_days) -> void
+    def weekend_days=: (Array[Integer] days) -> void
     def add_holiday: (date_like date) -> void
     def add_business_day: (date_like date) -> void
-    def weekend_days=: (Array[Integer] days) -> void
+    def additional_holiday?: (Date date) -> bool
+    def additional_business_day?: (Date date) -> bool
+    def weekend_day?: (Integer wday) -> bool
+    def reset!: () -> void
+
+    private
+
+    def normalize_date: (date_like date) -> Date
+    def validate_date_array!: (Array[untyped] dates, String field_name) -> void
+    def validate_weekend_days!: (Array[untyped] days) -> void
   end
 
   # キャッシュ管理クラス

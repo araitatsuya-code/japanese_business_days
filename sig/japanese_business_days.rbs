@@ -1,4 +1,133 @@
 module JapaneseBusinessDays
   VERSION: String
-  # See the writing guide of rbs: https://github.com/ruby/rbs#guides
+
+  type date_like = Date | Time | DateTime | String
+  type holiday_type = :fixed | :calculated | :happy_monday | :substitute
+
+  # 定数
+  FIXED_HOLIDAYS: Hash[[Integer, Integer], String]
+  HAPPY_MONDAY_HOLIDAYS: Hash[[Integer, Integer], String]
+  DEFAULT_WEEKEND_DAYS: Array[Integer]
+
+  # エラークラス
+  class Error < StandardError
+  end
+
+  class InvalidDateError < Error
+  end
+
+  class InvalidArgumentError < Error
+  end
+
+  class ConfigurationError < Error
+  end
+
+  # 祝日クラス
+  class Holiday
+    attr_reader date: Date
+    attr_reader name: String
+    attr_reader type: holiday_type
+
+    def initialize: (Date date, String name, holiday_type type) -> void
+    def to_s: () -> String
+    def ==: (untyped other) -> bool
+    def eql?: (untyped other) -> bool
+    def hash: () -> Integer
+  end
+
+  # 設定クラス
+  class Configuration
+    attr_accessor additional_holidays: Array[Date]
+    attr_accessor additional_business_days: Array[Date]
+    attr_accessor weekend_days: Array[Integer]
+
+    def initialize: () -> void
+    def add_holiday: (date_like date) -> void
+    def add_business_day: (date_like date) -> void
+    def weekend_days=: (Array[Integer] days) -> void
+  end
+
+  # キャッシュ管理クラス
+  class CacheManager
+    DEFAULT_MAX_CACHE_SIZE: Integer
+
+    def initialize: (?max_cache_size: Integer) -> void
+    def cached_holidays_for_year: (Integer year) -> Array[Holiday]
+    def store_holidays_for_year: (Integer year, Array[Holiday] holidays) -> void
+    def clear_cache: () -> void
+    def clear_cache_for_year: (Integer year) -> void
+
+    private
+
+    def manage_cache_size: () -> void
+    def cache_hit?: (Integer year) -> bool
+  end
+
+  # 祝日計算クラス
+  class HolidayCalculator
+    def initialize: () -> void
+    def holiday?: (Date date) -> bool
+    def holidays_in_year: (Integer year) -> Array[Holiday]
+    def substitute_holiday?: (Date date) -> bool
+
+    private
+
+    def fixed_holidays: (Integer year) -> Array[Holiday]
+    def calculated_holidays: (Integer year) -> Array[Holiday]
+    def happy_monday_holidays: (Integer year) -> Array[Holiday]
+  end
+
+  # 営業日計算クラス
+  class BusinessDayCalculator
+    def initialize: (HolidayCalculator holiday_calculator, Configuration configuration) -> void
+    def business_day?: (Date date) -> bool
+    def business_days_between: (Date start_date, Date end_date) -> Integer
+    def add_business_days: (Date date, Integer days) -> Date
+    def subtract_business_days: (Date date, Integer days) -> Date
+    def next_business_day: (Date date) -> Date
+    def previous_business_day: (Date date) -> Date
+
+    private
+
+    def weekend?: (Date date) -> bool
+    def non_business_day?: (Date date) -> bool
+    def normalize_date: (date_like date) -> Date
+  end
+
+  # 日付拡張モジュール
+  module DateExtensions
+    def add_business_days: (Integer days) -> Date
+    def subtract_business_days: (Integer days) -> Date
+    def business_day?: () -> bool
+    def holiday?: () -> bool
+    def next_business_day: () -> Date
+    def previous_business_day: () -> Date
+  end
+
+  # メインモジュールのクラスメソッド
+  def self.configuration: () -> Configuration
+  def self.configure: () { (Configuration) -> void } -> void
+  def self.business_days_between: (date_like start_date, date_like end_date) -> Integer
+  def self.business_day?: (date_like date) -> bool
+  def self.holiday?: (date_like date) -> bool
+  def self.holidays_in_year: (Integer year) -> Array[Holiday]
+
+  private
+
+  def self.holiday_calculator: () -> HolidayCalculator
+  def self.business_day_calculator: () -> BusinessDayCalculator
+  def self.normalize_date: (date_like date) -> Date
+end
+
+# Date/Time/DateTimeクラスへの拡張
+class Date
+  include JapaneseBusinessDays::DateExtensions
+end
+
+class Time
+  include JapaneseBusinessDays::DateExtensions
+end
+
+class DateTime
+  include JapaneseBusinessDays::DateExtensions
 end

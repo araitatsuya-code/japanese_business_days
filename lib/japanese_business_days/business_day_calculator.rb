@@ -129,15 +129,35 @@ module JapaneseBusinessDays
     # 次の営業日
     # @param date [Date] 基準日
     # @return [Date] 次の営業日
+    # @raise [InvalidArgumentError] 無効な引数の場合
     def next_business_day(date)
-      raise NotImplementedError, "This method will be implemented in task 5.4"
+      validate_date!(date)
+      
+      current_date = date
+      loop do
+        current_date += 1
+        break if business_day?(current_date)
+      end
+      current_date
+    rescue => e
+      handle_calculation_error(e, "next business day calculation for #{date}")
     end
 
     # 前の営業日
     # @param date [Date] 基準日
     # @return [Date] 前の営業日
+    # @raise [InvalidArgumentError] 無効な引数の場合
     def previous_business_day(date)
-      raise NotImplementedError, "This method will be implemented in task 5.4"
+      validate_date!(date)
+      
+      current_date = date
+      loop do
+        current_date -= 1
+        break if business_day?(current_date)
+      end
+      current_date
+    rescue => e
+      handle_calculation_error(e, "previous business day calculation for #{date}")
     end
 
     private

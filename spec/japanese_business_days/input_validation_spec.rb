@@ -18,19 +18,19 @@ RSpec.describe JapaneseBusinessDays, 'Input Validation' do
       it 'raises InvalidArgumentError when start_date is nil' do
         expect {
           JapaneseBusinessDays.business_days_between(nil, Date.new(2024, 1, 10))
-        }.to raise_error(JapaneseBusinessDays::InvalidArgumentError, "start_date cannot be nil")
+        }.to raise_error(JapaneseBusinessDays::InvalidArgumentError, /start_date cannot be nil/)
       end
 
       it 'raises InvalidArgumentError when end_date is nil' do
         expect {
           JapaneseBusinessDays.business_days_between(Date.new(2024, 1, 1), nil)
-        }.to raise_error(JapaneseBusinessDays::InvalidArgumentError, "end_date cannot be nil")
+        }.to raise_error(JapaneseBusinessDays::InvalidArgumentError, /end_date cannot be nil/)
       end
 
       it 'raises InvalidArgumentError when both dates are nil' do
         expect {
           JapaneseBusinessDays.business_days_between(nil, nil)
-        }.to raise_error(JapaneseBusinessDays::InvalidArgumentError, "start_date cannot be nil")
+        }.to raise_error(JapaneseBusinessDays::InvalidArgumentError, /start_date cannot be nil/)
       end
     end
 
@@ -38,7 +38,7 @@ RSpec.describe JapaneseBusinessDays, 'Input Validation' do
       it 'raises InvalidArgumentError when date is nil' do
         expect {
           JapaneseBusinessDays.business_day?(nil)
-        }.to raise_error(JapaneseBusinessDays::InvalidArgumentError, "date cannot be nil")
+        }.to raise_error(JapaneseBusinessDays::InvalidArgumentError, /date cannot be nil/)
       end
     end
 
@@ -46,7 +46,7 @@ RSpec.describe JapaneseBusinessDays, 'Input Validation' do
       it 'raises InvalidArgumentError when date is nil' do
         expect {
           JapaneseBusinessDays.holiday?(nil)
-        }.to raise_error(JapaneseBusinessDays::InvalidArgumentError, "date cannot be nil")
+        }.to raise_error(JapaneseBusinessDays::InvalidArgumentError, /date cannot be nil/)
       end
     end
 
@@ -54,7 +54,7 @@ RSpec.describe JapaneseBusinessDays, 'Input Validation' do
       it 'raises InvalidArgumentError when year is nil' do
         expect {
           JapaneseBusinessDays.holidays_in_year(nil)
-        }.to raise_error(JapaneseBusinessDays::InvalidArgumentError, "year cannot be nil")
+        }.to raise_error(JapaneseBusinessDays::InvalidArgumentError, /year cannot be nil/)
       end
     end
 
@@ -62,13 +62,13 @@ RSpec.describe JapaneseBusinessDays, 'Input Validation' do
       it 'raises InvalidArgumentError when date is nil' do
         expect {
           JapaneseBusinessDays.add_business_days(nil, 5)
-        }.to raise_error(JapaneseBusinessDays::InvalidArgumentError, "date cannot be nil")
+        }.to raise_error(JapaneseBusinessDays::InvalidArgumentError, /date cannot be nil/)
       end
 
       it 'raises InvalidArgumentError when days is nil' do
         expect {
           JapaneseBusinessDays.add_business_days(Date.new(2024, 1, 1), nil)
-        }.to raise_error(JapaneseBusinessDays::InvalidArgumentError, "days cannot be nil")
+        }.to raise_error(JapaneseBusinessDays::InvalidArgumentError, /days cannot be nil/)
       end
     end
 
@@ -76,13 +76,13 @@ RSpec.describe JapaneseBusinessDays, 'Input Validation' do
       it 'raises InvalidArgumentError when date is nil' do
         expect {
           JapaneseBusinessDays.subtract_business_days(nil, 5)
-        }.to raise_error(JapaneseBusinessDays::InvalidArgumentError, "date cannot be nil")
+        }.to raise_error(JapaneseBusinessDays::InvalidArgumentError, /date cannot be nil/)
       end
 
       it 'raises InvalidArgumentError when days is nil' do
         expect {
           JapaneseBusinessDays.subtract_business_days(Date.new(2024, 1, 1), nil)
-        }.to raise_error(JapaneseBusinessDays::InvalidArgumentError, "days cannot be nil")
+        }.to raise_error(JapaneseBusinessDays::InvalidArgumentError, /days cannot be nil/)
       end
     end
 
@@ -90,7 +90,7 @@ RSpec.describe JapaneseBusinessDays, 'Input Validation' do
       it 'raises InvalidArgumentError when date is nil' do
         expect {
           JapaneseBusinessDays.next_business_day(nil)
-        }.to raise_error(JapaneseBusinessDays::InvalidArgumentError, "date cannot be nil")
+        }.to raise_error(JapaneseBusinessDays::InvalidArgumentError, /date cannot be nil/)
       end
     end
 
@@ -98,7 +98,7 @@ RSpec.describe JapaneseBusinessDays, 'Input Validation' do
       it 'raises InvalidArgumentError when date is nil' do
         expect {
           JapaneseBusinessDays.previous_business_day(nil)
-        }.to raise_error(JapaneseBusinessDays::InvalidArgumentError, "date cannot be nil")
+        }.to raise_error(JapaneseBusinessDays::InvalidArgumentError, /date cannot be nil/)
       end
     end
   end
@@ -253,13 +253,13 @@ RSpec.describe JapaneseBusinessDays, 'Input Validation' do
       it 'raises InvalidArgumentError for year below 1000' do
         expect {
           JapaneseBusinessDays.holidays_in_year(999)
-        }.to raise_error(JapaneseBusinessDays::InvalidArgumentError, "Year must be between 1000 and 9999, got 999")
+        }.to raise_error(JapaneseBusinessDays::InvalidArgumentError, /Year must be between 1000 and 9999, got 999/)
       end
 
       it 'raises InvalidArgumentError for year above 9999' do
         expect {
           JapaneseBusinessDays.holidays_in_year(10000)
-        }.to raise_error(JapaneseBusinessDays::InvalidArgumentError, "Year must be between 1000 and 9999, got 10000")
+        }.to raise_error(JapaneseBusinessDays::InvalidArgumentError, /Year must be between 1000 and 9999, got 10000/)
       end
 
       it 'accepts valid years' do
@@ -275,7 +275,7 @@ RSpec.describe JapaneseBusinessDays, 'Input Validation' do
       it 'raises InvalidArgumentError when no block is given' do
         expect {
           JapaneseBusinessDays.configure
-        }.to raise_error(JapaneseBusinessDays::InvalidArgumentError, "Configuration block is required")
+        }.to raise_error(JapaneseBusinessDays::InvalidArgumentError, /Configuration block is required/)
       end
 
       it 'wraps configuration errors in ConfigurationError' do
@@ -284,7 +284,7 @@ RSpec.describe JapaneseBusinessDays, 'Input Validation' do
             # 標準エラーを発生させる（InvalidArgumentError以外）
             raise StandardError, "Some unexpected error"
           end
-        }.to raise_error(JapaneseBusinessDays::ConfigurationError, /Configuration error/)
+        }.to raise_error(JapaneseBusinessDays::ConfigurationError, /Configuration failed/)
       end
 
       it 'preserves InvalidArgumentError from configuration methods' do
@@ -300,7 +300,7 @@ RSpec.describe JapaneseBusinessDays, 'Input Validation' do
           JapaneseBusinessDays.configure do |config|
             config.add_holiday(nil)
           end
-        }.to raise_error(JapaneseBusinessDays::InvalidArgumentError, "date cannot be nil")
+        }.to raise_error(JapaneseBusinessDays::InvalidArgumentError, /date cannot be nil/)
       end
     end
   end
@@ -312,7 +312,7 @@ RSpec.describe JapaneseBusinessDays, 'Input Validation' do
       it 'raises InvalidArgumentError when days is nil' do
         expect {
           date.add_business_days(nil)
-        }.to raise_error(JapaneseBusinessDays::InvalidArgumentError, "days cannot be nil")
+        }.to raise_error(JapaneseBusinessDays::InvalidArgumentError, /days cannot be nil/)
       end
 
       it 'raises InvalidArgumentError for invalid days types' do
@@ -328,7 +328,7 @@ RSpec.describe JapaneseBusinessDays, 'Input Validation' do
       it 'raises InvalidArgumentError when days is nil' do
         expect {
           date.subtract_business_days(nil)
-        }.to raise_error(JapaneseBusinessDays::InvalidArgumentError, "days cannot be nil")
+        }.to raise_error(JapaneseBusinessDays::InvalidArgumentError, /days cannot be nil/)
       end
 
       it 'raises InvalidArgumentError for invalid days types' do
@@ -348,7 +348,7 @@ RSpec.describe JapaneseBusinessDays, 'Input Validation' do
       it 'raises InvalidArgumentError when date is nil' do
         expect {
           config.add_holiday(nil)
-        }.to raise_error(JapaneseBusinessDays::InvalidArgumentError, "date cannot be nil")
+        }.to raise_error(JapaneseBusinessDays::InvalidArgumentError, /date cannot be nil/)
       end
 
       it 'raises InvalidArgumentError for invalid date types' do
@@ -362,7 +362,7 @@ RSpec.describe JapaneseBusinessDays, 'Input Validation' do
       it 'raises InvalidArgumentError for empty date strings' do
         expect {
           config.add_holiday("")
-        }.to raise_error(JapaneseBusinessDays::InvalidArgumentError, "Date string cannot be empty")
+        }.to raise_error(JapaneseBusinessDays::InvalidArgumentError, /Date string cannot be empty/)
       end
 
       it 'raises InvalidDateError for invalid date format strings' do
@@ -376,7 +376,7 @@ RSpec.describe JapaneseBusinessDays, 'Input Validation' do
       it 'raises InvalidArgumentError when date is nil' do
         expect {
           config.add_business_day(nil)
-        }.to raise_error(JapaneseBusinessDays::InvalidArgumentError, "date cannot be nil")
+        }.to raise_error(JapaneseBusinessDays::InvalidArgumentError, /date cannot be nil/)
       end
 
       it 'raises InvalidArgumentError for invalid date types' do

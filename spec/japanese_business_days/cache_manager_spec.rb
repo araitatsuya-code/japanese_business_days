@@ -151,21 +151,70 @@ RSpec.describe JapaneseBusinessDays::CacheManager do
     end
   end
 
-  describe "基本的なキャッシュサイズ管理" do
-    let(:small_cache_manager) { described_class.new(max_cache_size: 2) }
+  describe "LRU + 頻度ベースキャッシュ管理" do
+    let(:small_cache_manager) { described_class.new(max_cache_size: 3) }
 
-    it "最大キャッシュサイズを超えた場合、最も古いエントリを削除する" do
-      # 最大サイズまでキャッシュを埋める
+    it "最大キャッシュサイズを超えた場合、LRUアルゴリズムで削除する" do
+      # キャッシュを満杯にする
       small_cache_manager.store_holidays_for_year(2022, [])
       small_cache_manager.store_holidays_for_year(2023, [])
-      expect(small_cache_manager.cache_size).to eq(2)
-      expect(small_cache_manager.cached_years).to eq([2022, 2023])
-      
-      # 新しいエントリを追加すると最も古いものが削除される
       small_cache_manager.store_holidays_for_year(2024, holidays_2024)
-      expect(small_cache_manager.cache_size).to eq(2)
-      expect(small_cache_manager.cached_years).to eq([2023, 2024])
+      expect(small_cache_manager.cache_size).to eq(3)
+      
+      # 2023にアクセスして最近使用済みにする
+      small_cache_manager.cached_holidays_for_year(2023)
+      
+      # 新しいエントリを追加すると最も古い2022が削除される
+      small_cache_manager.store_holidays_for_year(2025, [])
+      expect(small_cache_manager.cache_size).to eq(3)
       expect(small_cache_manager.cached_holidays_for_year(2022)).to be_nil
+      expect(small_cache_manager.cached_holidays_for_year(2023)).to eq([])
+      expect(small_cache_manager.cached_holidays_for_year(2024)).to eq(holidays_2024)
+      expect(small_cache_manager.cached_holidays_for_year(2025)).to eq([])
+    end
+
+    it "アクセス頻度を考慮した削除を行う" do
+      # キャッシュを満杯にする
+      small_cache_manager.store_holidays_for_year(2022, [])
+      small_cache_manager.store_holidays_for_year(2023, [])
+      small_cache_manager.store_holidays_for_year(2024, holidays_2024)
+      
+      # 2023を頻繁にアクセス
+      5.times { small_cache_manager.cached_holidays_for_year(2023) }
+      
+      # 新しいエントリを追加
+      small_cache_manager.store_holidays_for_year(2025, [])
+      
+      # 頻繁にアクセスされた2023は残っているべき
+      expect(small_cache_manager.cached_holidays_for_year(2023)).to eq([])
+      expect(small_cache_manager.cached_holidays_for_year(2025)).to eq([])
+    end
+  end
+
+  describe "#cache_stats" do
+    before do
+      cache_manager.store_holidays_for_year(2024, holidays_2024)
+      cache_manager.cached_holidays_for_year(2024) # ヒット
+      cache_manager.cached_holidays_for_year(2025) # ミス
+    end
+
+    it "キャッシュ統計情報を返す" do
+      stats = cache_manager.cache_stats
+      
+      expect(stats[:size]).to eq(1)
+      expect(stats[:max_size]).to eq(10)
+      expect(stats[:most_accessed_year]).to eq(2024)
+      expect(stats[:memory_usage]).to be_a(String)
+      expect(stats[:memory_usage]).to include("bytes")
+    end
+  end
+
+  describe "#fast_access_available?" do
+    it "キャッシュされている年に対してtrueを返す" do
+      expect(cache_manager.fast_access_available?(2024)).to be false
+      
+      cache_manager.store_holidays_for_year(2024, holidays_2024)
+      expect(cache_manager.fast_access_available?(2024)).to be true
     end
   end
 

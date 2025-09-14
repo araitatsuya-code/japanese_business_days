@@ -120,4 +120,9 @@ if defined?(Rails)
   Date.include(JapaneseBusinessDays::DateExtensions)
   Time.include(JapaneseBusinessDays::DateExtensions)
   DateTime.include(JapaneseBusinessDays::DateExtensions)
+  
+  # ActiveSupportが利用可能な場合の追加統合
+  if defined?(ActiveSupport::TimeWithZone)
+    ActiveSupport::TimeWithZone.include(JapaneseBusinessDays::DateExtensions)
+  end
 end

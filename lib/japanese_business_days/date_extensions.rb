@@ -64,13 +64,18 @@ module JapaneseBusinessDays
       when Time, DateTime
         to_date
       else
-        raise InvalidArgumentError, "Unsupported date type: #{self.class}"
+        # ActiveSupport::TimeWithZoneの場合も考慮
+        if defined?(ActiveSupport::TimeWithZone) && is_a?(ActiveSupport::TimeWithZone)
+          to_date
+        else
+          raise InvalidArgumentError, "Unsupported date type: #{self.class}"
+        end
       end
     end
 
     # 結果を元のオブジェクトの型に変換
     # @param result_date [Date] 計算結果の日付
-    # @return [Date, Time, DateTime] 元のオブジェクトと同じ型の結果
+    # @return [Date, Time, DateTime, ActiveSupport::TimeWithZone] 元のオブジェクトと同じ型の結果
     def convert_result_to_original_type(result_date)
       case self
       when Date
@@ -82,7 +87,13 @@ module JapaneseBusinessDays
         # DateTimeオブジェクトの場合、元の時刻情報を保持して新しい日付に設定
         DateTime.new(result_date.year, result_date.month, result_date.day, hour, min, sec, offset)
       else
-        result_date
+        # ActiveSupport::TimeWithZoneの場合
+        if defined?(ActiveSupport::TimeWithZone) && is_a?(ActiveSupport::TimeWithZone)
+          # 元のタイムゾーンを保持して新しい日付に設定
+          time_zone.local(result_date.year, result_date.month, result_date.day, hour, min, sec)
+        else
+          result_date
+        end
       end
     end
   end

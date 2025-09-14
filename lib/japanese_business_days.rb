@@ -42,8 +42,23 @@ module JapaneseBusinessDays
 
     # 設定ブロック
     # @yield [Configuration] 設定オブジェクト
+    # @raise [InvalidArgumentError] ブロックが提供されない場合
     def configure
-      yield(configuration) if block_given?
+      unless block_given?
+        raise InvalidArgumentError, "Configuration block is required"
+      end
+      
+      begin
+        yield(configuration)
+      rescue => e
+        case e
+        when InvalidArgumentError, InvalidDateError, ConfigurationError
+          raise e
+        else
+          raise ConfigurationError, "Configuration error: #{e.message}"
+        end
+      end
+      
       # 設定変更後にキャッシュをクリア
       reset_calculators!
     end
@@ -59,31 +74,47 @@ module JapaneseBusinessDays
     # @param start_date [Date, Time, DateTime, String] 開始日
     # @param end_date [Date, Time, DateTime, String] 終了日
     # @return [Integer] 営業日数
+    # @raise [InvalidArgumentError] 引数がnilまたは無効な型の場合
+    # @raise [InvalidDateError] 日付形式が無効な場合
     def business_days_between(start_date, end_date)
-      business_day_calculator.business_days_between(
-        normalize_date(start_date),
-        normalize_date(end_date)
-      )
+      validate_not_nil!(start_date, "start_date")
+      validate_not_nil!(end_date, "end_date")
+      
+      normalized_start = normalize_date(start_date)
+      normalized_end = normalize_date(end_date)
+      
+      business_day_calculator.business_days_between(normalized_start, normalized_end)
     end
 
     # 営業日判定
     # @param date [Date, Time, DateTime, String] 判定する日付
     # @return [Boolean] 営業日の場合true
+    # @raise [InvalidArgumentError] 引数がnilまたは無効な型の場合
+    # @raise [InvalidDateError] 日付形式が無効な場合
     def business_day?(date)
-      business_day_calculator.business_day?(normalize_date(date))
+      validate_not_nil!(date, "date")
+      normalized_date = normalize_date(date)
+      business_day_calculator.business_day?(normalized_date)
     end
 
     # 祝日判定
     # @param date [Date, Time, DateTime, String] 判定する日付
     # @return [Boolean] 祝日の場合true
+    # @raise [InvalidArgumentError] 引数がnilまたは無効な型の場合
+    # @raise [InvalidDateError] 日付形式が無効な場合
     def holiday?(date)
-      holiday_calculator.holiday?(normalize_date(date))
+      validate_not_nil!(date, "date")
+      normalized_date = normalize_date(date)
+      holiday_calculator.holiday?(normalized_date)
     end
 
     # 年間祝日取得
     # @param year [Integer] 対象年
     # @return [Array<Holiday>] その年の祝日リスト
+    # @raise [InvalidArgumentError] 引数がnilまたは無効な型・範囲の場合
     def holidays_in_year(year)
+      validate_not_nil!(year, "year")
+      validate_year!(year)
       holiday_calculator.holidays_in_year(year)
     end
 
@@ -91,8 +122,15 @@ module JapaneseBusinessDays
     # @param date [Date, Time, DateTime, String] 基準日
     # @param days [Integer] 加算する営業日数
     # @return [Date] 計算結果の日付
+    # @raise [InvalidArgumentError] 引数がnilまたは無効な型の場合
+    # @raise [InvalidDateError] 日付形式が無効な場合
     def add_business_days(date, days)
-      result = business_day_calculator.add_business_days(normalize_date(date), days)
+      validate_not_nil!(date, "date")
+      validate_not_nil!(days, "days")
+      validate_integer!(days, "days")
+      
+      normalized_date = normalize_date(date)
+      result = business_day_calculator.add_business_days(normalized_date, days)
       normalize_date(result)
     end
 
@@ -100,24 +138,39 @@ module JapaneseBusinessDays
     # @param date [Date, Time, DateTime, String] 基準日
     # @param days [Integer] 減算する営業日数
     # @return [Date] 計算結果の日付
+    # @raise [InvalidArgumentError] 引数がnilまたは無効な型の場合
+    # @raise [InvalidDateError] 日付形式が無効な場合
     def subtract_business_days(date, days)
-      result = business_day_calculator.subtract_business_days(normalize_date(date), days)
+      validate_not_nil!(date, "date")
+      validate_not_nil!(days, "days")
+      validate_integer!(days, "days")
+      
+      normalized_date = normalize_date(date)
+      result = business_day_calculator.subtract_business_days(normalized_date, days)
       normalize_date(result)
     end
 
     # 次の営業日
     # @param date [Date, Time, DateTime, String] 基準日
     # @return [Date] 次の営業日
+    # @raise [InvalidArgumentError] 引数がnilまたは無効な型の場合
+    # @raise [InvalidDateError] 日付形式が無効な場合
     def next_business_day(date)
-      result = business_day_calculator.next_business_day(normalize_date(date))
+      validate_not_nil!(date, "date")
+      normalized_date = normalize_date(date)
+      result = business_day_calculator.next_business_day(normalized_date)
       normalize_date(result)
     end
 
     # 前の営業日
     # @param date [Date, Time, DateTime, String] 基準日
     # @return [Date] 前の営業日
+    # @raise [InvalidArgumentError] 引数がnilまたは無効な型の場合
+    # @raise [InvalidDateError] 日付形式が無効な場合
     def previous_business_day(date)
-      result = business_day_calculator.previous_business_day(normalize_date(date))
+      validate_not_nil!(date, "date")
+      normalized_date = normalize_date(date)
+      result = business_day_calculator.previous_business_day(normalized_date)
       normalize_date(result)
     end
 
@@ -145,9 +198,11 @@ module JapaneseBusinessDays
       @business_day_calculator = nil
     end
 
-    # 日付正規化（実装は後のタスクで行う）
+    # 日付正規化
     # @param date [Date, Time, DateTime, String] 正規化する日付
     # @return [Date] 正規化された日付
+    # @raise [InvalidArgumentError] 無効な日付型の場合
+    # @raise [InvalidDateError] 無効な日付形式の場合
     def normalize_date(date)
       case date
       when DateTime, Time
@@ -155,12 +210,59 @@ module JapaneseBusinessDays
       when Date
         date
       when String
+        validate_date_string!(date)
         Date.parse(date)
       else
-        raise InvalidArgumentError, "Invalid date type: #{date.class}"
+        raise InvalidArgumentError, "Invalid date type: #{date.class}. Expected Date, Time, DateTime, or String"
       end
     rescue ArgumentError => e
       raise InvalidDateError, "Invalid date format: #{date} - #{e.message}"
+    end
+
+    # nil値の検証
+    # @param value [Object] 検証する値
+    # @param param_name [String] パラメータ名
+    # @raise [InvalidArgumentError] 値がnilの場合
+    def validate_not_nil!(value, param_name)
+      if value.nil?
+        raise InvalidArgumentError, "#{param_name} cannot be nil"
+      end
+    end
+
+    # 整数の検証
+    # @param value [Object] 検証する値
+    # @param param_name [String] パラメータ名
+    # @raise [InvalidArgumentError] 値が整数でない場合
+    def validate_integer!(value, param_name)
+      unless value.is_a?(Integer)
+        raise InvalidArgumentError, "#{param_name} must be an Integer, got #{value.class}"
+      end
+    end
+
+    # 年の検証
+    # @param year [Object] 検証する年
+    # @raise [InvalidArgumentError] 無効な年の場合
+    def validate_year!(year)
+      unless year.is_a?(Integer)
+        raise InvalidArgumentError, "Year must be an Integer, got #{year.class}"
+      end
+      
+      unless (1000..9999).include?(year)
+        raise InvalidArgumentError, "Year must be between 1000 and 9999, got #{year}"
+      end
+    end
+
+    # 日付文字列の検証
+    # @param date_string [String] 検証する日付文字列
+    # @raise [InvalidArgumentError] 空文字列の場合
+    def validate_date_string!(date_string)
+      if date_string.empty?
+        raise InvalidArgumentError, "Date string cannot be empty"
+      end
+      
+      if date_string.strip.empty?
+        raise InvalidArgumentError, "Date string cannot be blank"
+      end
     end
   end
 end

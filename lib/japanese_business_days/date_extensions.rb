@@ -8,6 +8,7 @@ module JapaneseBusinessDays
     # @return [Date, Time, DateTime] 計算結果の日付（元のオブジェクトと同じ型）
     # @raise [InvalidArgumentError] 無効な引数の場合
     def add_business_days(days)
+      validate_days_parameter!(days)
       date = normalize_to_date
       result_date = JapaneseBusinessDays.send(:business_day_calculator).add_business_days(date, days)
       convert_result_to_original_type(result_date)
@@ -18,6 +19,7 @@ module JapaneseBusinessDays
     # @return [Date, Time, DateTime] 計算結果の日付（元のオブジェクトと同じ型）
     # @raise [InvalidArgumentError] 無効な引数の場合
     def subtract_business_days(days)
+      validate_days_parameter!(days)
       date = normalize_to_date
       result_date = JapaneseBusinessDays.send(:business_day_calculator).subtract_business_days(date, days)
       convert_result_to_original_type(result_date)
@@ -57,6 +59,7 @@ module JapaneseBusinessDays
 
     # 自身をDateオブジェクトに正規化
     # @return [Date] 正規化された日付
+    # @raise [InvalidArgumentError] サポートされていない日付型の場合
     def normalize_to_date
       case self
       when Date
@@ -70,6 +73,19 @@ module JapaneseBusinessDays
         else
           raise InvalidArgumentError, "Unsupported date type: #{self.class}"
         end
+      end
+    end
+
+    # 日数パラメータの検証
+    # @param days [Object] 検証する日数
+    # @raise [InvalidArgumentError] 無効な日数の場合
+    def validate_days_parameter!(days)
+      if days.nil?
+        raise InvalidArgumentError, "days cannot be nil"
+      end
+      
+      unless days.is_a?(Integer)
+        raise InvalidArgumentError, "days must be an Integer, got #{days.class}"
       end
     end
 

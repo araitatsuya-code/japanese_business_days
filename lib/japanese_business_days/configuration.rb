@@ -37,7 +37,10 @@ module JapaneseBusinessDays
 
     # カスタム祝日追加
     # @param date [Date, Time, DateTime, String] 追加する祝日
+    # @raise [InvalidArgumentError] 引数がnilまたは無効な型の場合
+    # @raise [InvalidDateError] 日付形式が無効な場合
     def add_holiday(date)
+      validate_not_nil!(date, "date")
       normalized_date = normalize_date(date)
       unless @additional_holidays.include?(normalized_date)
         @additional_holidays << normalized_date
@@ -46,7 +49,10 @@ module JapaneseBusinessDays
 
     # カスタム営業日追加（祝日の上書き）
     # @param date [Date, Time, DateTime, String] 追加する営業日
+    # @raise [InvalidArgumentError] 引数がnilまたは無効な型の場合
+    # @raise [InvalidDateError] 日付形式が無効な場合
     def add_business_day(date)
+      validate_not_nil!(date, "date")
       normalized_date = normalize_date(date)
       unless @additional_business_days.include?(normalized_date)
         @additional_business_days << normalized_date
@@ -95,12 +101,36 @@ module JapaneseBusinessDays
       when Time, DateTime
         date.to_date
       when String
+        validate_date_string!(date)
         Date.parse(date)
       else
-        raise InvalidArgumentError, "Invalid date type: #{date.class}"
+        raise InvalidArgumentError, "Invalid date type: #{date.class}. Expected Date, Time, DateTime, or String"
       end
     rescue ArgumentError => e
       raise InvalidDateError, "Invalid date format: #{date} - #{e.message}"
+    end
+
+    # nil値の検証
+    # @param value [Object] 検証する値
+    # @param param_name [String] パラメータ名
+    # @raise [InvalidArgumentError] 値がnilの場合
+    def validate_not_nil!(value, param_name)
+      if value.nil?
+        raise InvalidArgumentError, "#{param_name} cannot be nil"
+      end
+    end
+
+    # 日付文字列の検証
+    # @param date_string [String] 検証する日付文字列
+    # @raise [InvalidArgumentError] 空文字列の場合
+    def validate_date_string!(date_string)
+      if date_string.empty?
+        raise InvalidArgumentError, "Date string cannot be empty"
+      end
+      
+      if date_string.strip.empty?
+        raise InvalidArgumentError, "Date string cannot be blank"
+      end
     end
 
     # 日付配列の検証

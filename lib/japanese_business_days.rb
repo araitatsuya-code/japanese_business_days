@@ -44,6 +44,15 @@ module JapaneseBusinessDays
     # @yield [Configuration] 設定オブジェクト
     def configure
       yield(configuration) if block_given?
+      # 設定変更後にキャッシュをクリア
+      reset_calculators!
+    end
+
+    # 設定リセット（テスト用）
+    # @api private
+    def reset_configuration!
+      @configuration = Configuration.new
+      reset_calculators!
     end
 
     # 営業日数計算
@@ -78,6 +87,40 @@ module JapaneseBusinessDays
       holiday_calculator.holidays_in_year(year)
     end
 
+    # 営業日加算
+    # @param date [Date, Time, DateTime, String] 基準日
+    # @param days [Integer] 加算する営業日数
+    # @return [Date] 計算結果の日付
+    def add_business_days(date, days)
+      result = business_day_calculator.add_business_days(normalize_date(date), days)
+      normalize_date(result)
+    end
+
+    # 営業日減算
+    # @param date [Date, Time, DateTime, String] 基準日
+    # @param days [Integer] 減算する営業日数
+    # @return [Date] 計算結果の日付
+    def subtract_business_days(date, days)
+      result = business_day_calculator.subtract_business_days(normalize_date(date), days)
+      normalize_date(result)
+    end
+
+    # 次の営業日
+    # @param date [Date, Time, DateTime, String] 基準日
+    # @return [Date] 次の営業日
+    def next_business_day(date)
+      result = business_day_calculator.next_business_day(normalize_date(date))
+      normalize_date(result)
+    end
+
+    # 前の営業日
+    # @param date [Date, Time, DateTime, String] 基準日
+    # @return [Date] 前の営業日
+    def previous_business_day(date)
+      result = business_day_calculator.previous_business_day(normalize_date(date))
+      normalize_date(result)
+    end
+
     private
 
     # 祝日計算器のインスタンス
@@ -95,15 +138,22 @@ module JapaneseBusinessDays
       )
     end
 
+    # 計算器のリセット（設定変更時に呼び出される）
+    # @api private
+    def reset_calculators!
+      @holiday_calculator = nil
+      @business_day_calculator = nil
+    end
+
     # 日付正規化（実装は後のタスクで行う）
     # @param date [Date, Time, DateTime, String] 正規化する日付
     # @return [Date] 正規化された日付
     def normalize_date(date)
       case date
+      when DateTime, Time
+        date.to_date
       when Date
         date
-      when Time, DateTime
-        date.to_date
       when String
         Date.parse(date)
       else

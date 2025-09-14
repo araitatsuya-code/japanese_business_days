@@ -64,16 +64,66 @@ module JapaneseBusinessDays
     # @param date [Date] 基準日
     # @param days [Integer] 加算する営業日数
     # @return [Date] 計算結果の日付
+    # @raise [InvalidArgumentError] 無効な引数の場合
     def add_business_days(date, days)
-      raise NotImplementedError, "This method will be implemented in task 5.3"
+      validate_date!(date)
+      validate_days!(days)
+      
+      # 0日の場合は、営業日であればその日付を、そうでなければ次の営業日を返す
+      if days == 0
+        return business_day?(date) ? date : next_business_day_from(date)
+      end
+      
+      # 負の日数の場合は減算として処理
+      return subtract_business_days(date, -days) if days < 0
+      
+      current_date = date
+      remaining_days = days
+      
+      # 指定された営業日数分進める
+      while remaining_days > 0
+        current_date += 1
+        if business_day?(current_date)
+          remaining_days -= 1
+        end
+      end
+      
+      current_date
+    rescue => e
+      handle_calculation_error(e, "business days addition for #{date} + #{days} days")
     end
 
     # 営業日減算
     # @param date [Date] 基準日
     # @param days [Integer] 減算する営業日数
     # @return [Date] 計算結果の日付
+    # @raise [InvalidArgumentError] 無効な引数の場合
     def subtract_business_days(date, days)
-      raise NotImplementedError, "This method will be implemented in task 5.3"
+      validate_date!(date)
+      validate_days!(days)
+      
+      # 0日の場合は、営業日であればその日付を、そうでなければ次の営業日を返す
+      if days == 0
+        return business_day?(date) ? date : next_business_day_from(date)
+      end
+      
+      # 負の日数の場合は加算として処理
+      return add_business_days(date, -days) if days < 0
+      
+      current_date = date
+      remaining_days = days
+      
+      # 指定された営業日数分戻る
+      while remaining_days > 0
+        current_date -= 1
+        if business_day?(current_date)
+          remaining_days -= 1
+        end
+      end
+      
+      current_date
+    rescue => e
+      handle_calculation_error(e, "business days subtraction for #{date} - #{days} days")
     end
 
     # 次の営業日
@@ -125,6 +175,27 @@ module JapaneseBusinessDays
       unless date.is_a?(Date)
         raise InvalidArgumentError, "Date must be a Date object, got #{date.class}"
       end
+    end
+
+    # 日数の検証
+    # @param days [Integer] 検証する日数
+    # @raise [InvalidArgumentError] 無効な日数の場合
+    def validate_days!(days)
+      unless days.is_a?(Integer)
+        raise InvalidArgumentError, "Days must be an Integer, got #{days.class}"
+      end
+    end
+
+    # 指定日から次の営業日を検索（内部用）
+    # @param date [Date] 基準日
+    # @return [Date] 次の営業日
+    def next_business_day_from(date)
+      current_date = date
+      loop do
+        current_date += 1
+        break if business_day?(current_date)
+      end
+      current_date
     end
 
     # エラーハンドリング

@@ -286,4 +286,238 @@ RSpec.describe JapaneseBusinessDays::BusinessDayCalculator do
       end
     end
   end
+
+  describe '#add_business_days' do
+    context '基本的な営業日加算' do
+      it '0日加算の場合、営業日であればその日付を返す' do
+        monday = Date.new(2024, 1, 15) # 2024年1月15日（月曜日）
+        result = calculator.add_business_days(monday, 0)
+        expect(result).to eq(monday)
+      end
+
+      it '0日加算の場合、非営業日であれば次の営業日を返す' do
+        saturday = Date.new(2024, 1, 13) # 2024年1月13日（土曜日）
+        monday = Date.new(2024, 1, 15) # 2024年1月15日（月曜日）
+        result = calculator.add_business_days(saturday, 0)
+        expect(result).to eq(monday)
+      end
+
+      it '1営業日加算の場合、次の営業日を返す' do
+        monday = Date.new(2024, 1, 15) # 2024年1月15日（月曜日）
+        tuesday = Date.new(2024, 1, 16) # 2024年1月16日（火曜日）
+        result = calculator.add_business_days(monday, 1)
+        expect(result).to eq(tuesday)
+      end
+
+      it '5営業日加算の場合、正しい日付を返す' do
+        monday = Date.new(2024, 1, 15) # 2024年1月15日（月曜日）
+        monday_next_week = Date.new(2024, 1, 22) # 2024年1月22日（月曜日）
+        result = calculator.add_business_days(monday, 5)
+        expect(result).to eq(monday_next_week)
+      end
+    end
+
+    context '週末をまたぐ営業日加算' do
+      it '金曜日から1営業日加算で次の月曜日を返す' do
+        friday = Date.new(2024, 1, 12) # 2024年1月12日（金曜日）
+        monday = Date.new(2024, 1, 15) # 2024年1月15日（月曜日）
+        result = calculator.add_business_days(friday, 1)
+        expect(result).to eq(monday)
+      end
+
+      it '金曜日から3営業日加算で水曜日を返す' do
+        friday = Date.new(2024, 1, 12) # 2024年1月12日（金曜日）
+        wednesday = Date.new(2024, 1, 17) # 2024年1月17日（水曜日）
+        result = calculator.add_business_days(friday, 3)
+        expect(result).to eq(wednesday)
+      end
+    end
+
+    context '祝日をまたぐ営業日加算' do
+      it '祝日前の金曜日から1営業日加算で祝日後の営業日を返す' do
+        # 2024年1月5日（金曜日）から1営業日加算
+        # 1月8日（成人の日）をスキップして1月9日（火曜日）
+        friday = Date.new(2024, 1, 5) # 2024年1月5日（金曜日）
+        tuesday = Date.new(2024, 1, 9) # 2024年1月9日（火曜日）
+        result = calculator.add_business_days(friday, 1)
+        expect(result).to eq(tuesday)
+      end
+
+      it '元日前から営業日加算で正しい日付を返す' do
+        # 2023年12月29日（金曜日）から2営業日加算
+        # 1月1日（元日）をスキップして1月3日（水曜日）
+        friday = Date.new(2023, 12, 29) # 2023年12月29日（金曜日）
+        wednesday = Date.new(2024, 1, 3) # 2024年1月3日（水曜日）
+        result = calculator.add_business_days(friday, 2)
+        expect(result).to eq(wednesday)
+      end
+    end
+
+    context '負の日数での営業日加算' do
+      it '負の日数を指定した場合、減算として処理される' do
+        wednesday = Date.new(2024, 1, 17) # 2024年1月17日（水曜日）
+        monday = Date.new(2024, 1, 15) # 2024年1月15日（月曜日）
+        result = calculator.add_business_days(wednesday, -2)
+        expect(result).to eq(monday)
+      end
+    end
+
+    context 'カスタム設定での営業日加算' do
+      it 'カスタム営業日を考慮して加算する' do
+        # 元日をカスタム営業日として設定
+        new_years_day = Date.new(2024, 1, 1)
+        configuration.add_business_day(new_years_day)
+        
+        friday = Date.new(2023, 12, 29) # 2023年12月29日（金曜日）
+        tuesday = Date.new(2024, 1, 2) # 2024年1月2日（火曜日）
+        result = calculator.add_business_days(friday, 2)
+        expect(result).to eq(tuesday)
+      end
+
+      it 'カスタム非営業日をスキップして加算する' do
+        # 平日をカスタム非営業日として設定
+        tuesday = Date.new(2024, 1, 16) # 2024年1月16日（火曜日）
+        configuration.add_holiday(tuesday)
+        
+        monday = Date.new(2024, 1, 15) # 2024年1月15日（月曜日）
+        wednesday = Date.new(2024, 1, 17) # 2024年1月17日（水曜日）
+        result = calculator.add_business_days(monday, 1)
+        expect(result).to eq(wednesday)
+      end
+    end
+
+    context '無効な引数' do
+      it 'Date以外のオブジェクトを渡すとInvalidArgumentErrorが発生する' do
+        expect { calculator.add_business_days("2024-01-15", 1) }.to raise_error(JapaneseBusinessDays::InvalidArgumentError)
+      end
+
+      it 'Integer以外の日数を渡すとInvalidArgumentErrorが発生する' do
+        date = Date.new(2024, 1, 15)
+        expect { calculator.add_business_days(date, "1") }.to raise_error(JapaneseBusinessDays::InvalidArgumentError)
+      end
+
+      it 'nilを渡すとInvalidArgumentErrorが発生する' do
+        date = Date.new(2024, 1, 15)
+        expect { calculator.add_business_days(nil, 1) }.to raise_error(JapaneseBusinessDays::InvalidArgumentError)
+        expect { calculator.add_business_days(date, nil) }.to raise_error(JapaneseBusinessDays::InvalidArgumentError)
+      end
+    end
+  end
+
+  describe '#subtract_business_days' do
+    context '基本的な営業日減算' do
+      it '0日減算の場合、営業日であればその日付を返す' do
+        monday = Date.new(2024, 1, 15) # 2024年1月15日（月曜日）
+        result = calculator.subtract_business_days(monday, 0)
+        expect(result).to eq(monday)
+      end
+
+      it '0日減算の場合、非営業日であれば次の営業日を返す' do
+        saturday = Date.new(2024, 1, 13) # 2024年1月13日（土曜日）
+        monday = Date.new(2024, 1, 15) # 2024年1月15日（月曜日）
+        result = calculator.subtract_business_days(saturday, 0)
+        expect(result).to eq(monday)
+      end
+
+      it '1営業日減算の場合、前の営業日を返す' do
+        tuesday = Date.new(2024, 1, 16) # 2024年1月16日（火曜日）
+        monday = Date.new(2024, 1, 15) # 2024年1月15日（月曜日）
+        result = calculator.subtract_business_days(tuesday, 1)
+        expect(result).to eq(monday)
+      end
+
+      it '5営業日減算の場合、正しい日付を返す' do
+        monday = Date.new(2024, 1, 22) # 2024年1月22日（月曜日）
+        monday_prev_week = Date.new(2024, 1, 15) # 2024年1月15日（月曜日）
+        result = calculator.subtract_business_days(monday, 5)
+        expect(result).to eq(monday_prev_week)
+      end
+    end
+
+    context '週末をまたぐ営業日減算' do
+      it '月曜日から1営業日減算で前の金曜日を返す' do
+        monday = Date.new(2024, 1, 15) # 2024年1月15日（月曜日）
+        friday = Date.new(2024, 1, 12) # 2024年1月12日（金曜日）
+        result = calculator.subtract_business_days(monday, 1)
+        expect(result).to eq(friday)
+      end
+
+      it '水曜日から3営業日減算で前の金曜日を返す' do
+        wednesday = Date.new(2024, 1, 17) # 2024年1月17日（水曜日）
+        friday = Date.new(2024, 1, 12) # 2024年1月12日（金曜日）
+        result = calculator.subtract_business_days(wednesday, 3)
+        expect(result).to eq(friday)
+      end
+    end
+
+    context '祝日をまたぐ営業日減算' do
+      it '祝日後の火曜日から1営業日減算で祝日前の金曜日を返す' do
+        # 2024年1月9日（火曜日）から1営業日減算
+        # 1月8日（成人の日）をスキップして1月5日（金曜日）
+        tuesday = Date.new(2024, 1, 9) # 2024年1月9日（火曜日）
+        friday = Date.new(2024, 1, 5) # 2024年1月5日（金曜日）
+        result = calculator.subtract_business_days(tuesday, 1)
+        expect(result).to eq(friday)
+      end
+
+      it '元日後から営業日減算で正しい日付を返す' do
+        # 2024年1月3日（水曜日）から2営業日減算
+        # 1月1日（元日）をスキップして2023年12月29日（金曜日）
+        wednesday = Date.new(2024, 1, 3) # 2024年1月3日（水曜日）
+        friday = Date.new(2023, 12, 29) # 2023年12月29日（金曜日）
+        result = calculator.subtract_business_days(wednesday, 2)
+        expect(result).to eq(friday)
+      end
+    end
+
+    context '負の日数での営業日減算' do
+      it '負の日数を指定した場合、加算として処理される' do
+        monday = Date.new(2024, 1, 15) # 2024年1月15日（月曜日）
+        wednesday = Date.new(2024, 1, 17) # 2024年1月17日（水曜日）
+        result = calculator.subtract_business_days(monday, -2)
+        expect(result).to eq(wednesday)
+      end
+    end
+
+    context 'カスタム設定での営業日減算' do
+      it 'カスタム営業日を考慮して減算する' do
+        # 元日をカスタム営業日として設定
+        new_years_day = Date.new(2024, 1, 1)
+        configuration.add_business_day(new_years_day)
+        
+        tuesday = Date.new(2024, 1, 2) # 2024年1月2日（火曜日）
+        friday = Date.new(2023, 12, 29) # 2023年12月29日（金曜日）
+        result = calculator.subtract_business_days(tuesday, 2)
+        expect(result).to eq(friday)
+      end
+
+      it 'カスタム非営業日をスキップして減算する' do
+        # 平日をカスタム非営業日として設定
+        tuesday = Date.new(2024, 1, 16) # 2024年1月16日（火曜日）
+        configuration.add_holiday(tuesday)
+        
+        wednesday = Date.new(2024, 1, 17) # 2024年1月17日（水曜日）
+        monday = Date.new(2024, 1, 15) # 2024年1月15日（月曜日）
+        result = calculator.subtract_business_days(wednesday, 1)
+        expect(result).to eq(monday)
+      end
+    end
+
+    context '無効な引数' do
+      it 'Date以外のオブジェクトを渡すとInvalidArgumentErrorが発生する' do
+        expect { calculator.subtract_business_days("2024-01-15", 1) }.to raise_error(JapaneseBusinessDays::InvalidArgumentError)
+      end
+
+      it 'Integer以外の日数を渡すとInvalidArgumentErrorが発生する' do
+        date = Date.new(2024, 1, 15)
+        expect { calculator.subtract_business_days(date, "1") }.to raise_error(JapaneseBusinessDays::InvalidArgumentError)
+      end
+
+      it 'nilを渡すとInvalidArgumentErrorが発生する' do
+        date = Date.new(2024, 1, 15)
+        expect { calculator.subtract_business_days(nil, 1) }.to raise_error(JapaneseBusinessDays::InvalidArgumentError)
+        expect { calculator.subtract_business_days(date, nil) }.to raise_error(JapaneseBusinessDays::InvalidArgumentError)
+      end
+    end
+  end
 end

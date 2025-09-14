@@ -36,10 +36,10 @@ require_relative "japanese_business_days/date_extensions"
 #   JapaneseBusinessDays.configure do |config|
 #     # カスタム祝日を追加
 #     config.add_holiday(Date.new(2024, 12, 31))
-#     
+#
 #     # 特定の祝日を営業日として扱う
 #     config.add_business_day(Date.new(2024, 1, 1))
-#     
+#
 #     # 週末の定義を変更（土曜日のみを週末とする）
 #     config.weekend_days = [6]
 #   end
@@ -56,14 +56,14 @@ require_relative "japanese_business_days/date_extensions"
 module JapaneseBusinessDays
   # 日本の祝日定数
   FIXED_HOLIDAYS = {
-    [1, 1]   => "元日",
-    [2, 11]  => "建国記念の日",
-    [4, 29]  => "昭和の日",
-    [5, 3]   => "憲法記念日",
-    [5, 4]   => "みどりの日",
-    [5, 5]   => "こどもの日",
-    [8, 11]  => "山の日",
-    [11, 3]  => "文化の日",
+    [1, 1] => "元日",
+    [2, 11] => "建国記念の日",
+    [4, 29] => "昭和の日",
+    [5, 3] => "憲法記念日",
+    [5, 4] => "みどりの日",
+    [5, 5] => "こどもの日",
+    [8, 11] => "山の日",
+    [11, 3] => "文化の日",
     [11, 23] => "勤労感謝の日",
     [12, 23] => "天皇誕生日"
   }.freeze
@@ -71,8 +71,8 @@ module JapaneseBusinessDays
   HAPPY_MONDAY_HOLIDAYS = {
     [1, 2] => "成人の日",      # 1月第2月曜日
     [7, 3] => "海の日",       # 7月第3月曜日
-    [9, 3] => "敬老の日",     # 9月第3月曜日
-    [10, 2] => "スポーツの日"  # 10月第2月曜日
+    [9, 3] => "敬老の日", # 9月第3月曜日
+    [10, 2] => "スポーツの日" # 10月第2月曜日
   }.freeze
 
   DEFAULT_WEEKEND_DAYS = [0, 6].freeze # 日曜日、土曜日
@@ -102,10 +102,10 @@ module JapaneseBusinessDays
     #   JapaneseBusinessDays.configure do |config|
     #     # カスタム祝日を追加
     #     config.add_holiday(Date.new(2024, 12, 31))
-    #     
+    #
     #     # 特定の祝日を営業日として扱う
     #     config.add_business_day(Date.new(2024, 1, 1))
-    #     
+    #
     #     # 週末を土曜日のみに変更
     #     config.weekend_days = [6]
     #   end
@@ -130,15 +130,15 @@ module JapaneseBusinessDays
         Logging.log_error(error)
         raise error
       end
-      
+
       Logging.debug("Starting configuration", { method: "configure" })
-      
+
       begin
         yield(configuration)
         Logging.info("Configuration completed successfully")
-      rescue => e
+      rescue StandardError => e
         Logging.log_error(e, { method: "configure" })
-        
+
         case e
         when InvalidArgumentError, InvalidDateError, ConfigurationError
           raise e
@@ -155,7 +155,7 @@ module JapaneseBusinessDays
           raise enhanced_error
         end
       end
-      
+
       # 設定変更後にキャッシュをクリア
       reset_calculators!
       Logging.debug("Calculators reset after configuration change")
@@ -194,34 +194,34 @@ module JapaneseBusinessDays
     # @since 0.1.0
     def business_days_between(start_date, end_date)
       Logging.debug("Calculating business days between dates", {
-        method: "business_days_between",
-        start_date: start_date,
-        end_date: end_date
-      })
-      
+                      method: "business_days_between",
+                      start_date: start_date,
+                      end_date: end_date
+                    })
+
       validate_not_nil!(start_date, "start_date")
       validate_not_nil!(end_date, "end_date")
-      
+
       begin
         normalized_start = normalize_date(start_date)
         normalized_end = normalize_date(end_date)
-        
+
         result = business_day_calculator.business_days_between(normalized_start, normalized_end)
-        
+
         Logging.debug("Business days calculation completed", {
-          method: "business_days_between",
-          result: result,
-          normalized_start: normalized_start,
-          normalized_end: normalized_end
-        })
-        
+                        method: "business_days_between",
+                        result: result,
+                        normalized_start: normalized_start,
+                        normalized_end: normalized_end
+                      })
+
         result
-      rescue => e
+      rescue StandardError => e
         Logging.log_error(e, {
-          method: "business_days_between",
-          start_date: start_date,
-          end_date: end_date
-        })
+                            method: "business_days_between",
+                            start_date: start_date,
+                            end_date: end_date
+                          })
         raise
       end
     end
@@ -339,7 +339,7 @@ module JapaneseBusinessDays
       validate_not_nil!(date, "date")
       validate_not_nil!(days, "days")
       validate_integer!(days, "days")
-      
+
       normalized_date = normalize_date(date)
       result = business_day_calculator.add_business_days(normalized_date, days)
       normalize_date(result)
@@ -372,7 +372,7 @@ module JapaneseBusinessDays
       validate_not_nil!(date, "date")
       validate_not_nil!(days, "days")
       validate_integer!(days, "days")
-      
+
       normalized_date = normalize_date(date)
       result = business_day_calculator.subtract_business_days(normalized_date, days)
       normalize_date(result)
@@ -493,15 +493,15 @@ module JapaneseBusinessDays
     # @param param_name [String] パラメータ名
     # @raise [InvalidArgumentError] 値がnilの場合
     def validate_not_nil!(value, param_name)
-      if value.nil?
-        error = InvalidArgumentError.new(
-          "#{param_name} cannot be nil",
-          parameter_name: param_name,
-          received_value: nil
-        )
-        Logging.log_error(error)
-        raise error
-      end
+      return unless value.nil?
+
+      error = InvalidArgumentError.new(
+        "#{param_name} cannot be nil",
+        parameter_name: param_name,
+        received_value: nil
+      )
+      Logging.log_error(error)
+      raise error
     end
 
     # 整数の検証
@@ -509,16 +509,16 @@ module JapaneseBusinessDays
     # @param param_name [String] パラメータ名
     # @raise [InvalidArgumentError] 値が整数でない場合
     def validate_integer!(value, param_name)
-      unless value.is_a?(Integer)
-        error = InvalidArgumentError.new(
-          "#{param_name} must be an Integer, got #{value.class}",
-          parameter_name: param_name,
-          received_value: value,
-          expected_type: Integer
-        )
-        Logging.log_error(error)
-        raise error
-      end
+      return if value.is_a?(Integer)
+
+      error = InvalidArgumentError.new(
+        "#{param_name} must be an Integer, got #{value.class}",
+        parameter_name: param_name,
+        received_value: value,
+        expected_type: Integer
+      )
+      Logging.log_error(error)
+      raise error
     end
 
     # 年の検証
@@ -535,17 +535,17 @@ module JapaneseBusinessDays
         Logging.log_error(error)
         raise error
       end
-      
-      unless (1000..9999).include?(year)
-        error = InvalidArgumentError.new(
-          "Year must be between 1000 and 9999, got #{year}",
-          parameter_name: "year",
-          received_value: year,
-          context: { valid_range: "1000-9999" }
-        )
-        Logging.log_error(error)
-        raise error
-      end
+
+      return if (1000..9999).cover?(year)
+
+      error = InvalidArgumentError.new(
+        "Year must be between 1000 and 9999, got #{year}",
+        parameter_name: "year",
+        received_value: year,
+        context: { valid_range: "1000-9999" }
+      )
+      Logging.log_error(error)
+      raise error
     end
 
     # 日付文字列の検証
@@ -561,16 +561,16 @@ module JapaneseBusinessDays
         Logging.log_error(error)
         raise error
       end
-      
-      if date_string.strip.empty?
-        error = InvalidArgumentError.new(
-          "Date string cannot be blank",
-          parameter_name: "date_string",
-          received_value: date_string
-        )
-        Logging.log_error(error)
-        raise error
-      end
+
+      return unless date_string.strip.empty?
+
+      error = InvalidArgumentError.new(
+        "Date string cannot be blank",
+        parameter_name: "date_string",
+        received_value: date_string
+      )
+      Logging.log_error(error)
+      raise error
     end
   end
 end
@@ -580,9 +580,7 @@ if defined?(Rails)
   Date.include(JapaneseBusinessDays::DateExtensions)
   Time.include(JapaneseBusinessDays::DateExtensions)
   DateTime.include(JapaneseBusinessDays::DateExtensions)
-  
+
   # ActiveSupportが利用可能な場合の追加統合
-  if defined?(ActiveSupport::TimeWithZone)
-    ActiveSupport::TimeWithZone.include(JapaneseBusinessDays::DateExtensions)
-  end
+  ActiveSupport::TimeWithZone.include(JapaneseBusinessDays::DateExtensions) if defined?(ActiveSupport::TimeWithZone)
 end

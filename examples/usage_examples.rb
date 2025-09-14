@@ -5,8 +5,8 @@
 # このファイルは、JapaneseBusinessDaysライブラリの様々な使用方法と
 # ベストプラクティスを示すサンプルコードを提供します。
 
-require 'japanese_business_days'
-require 'date'
+require "japanese_business_days"
+require "date"
 
 puts "=== JapaneseBusinessDays 使用例 ==="
 puts
@@ -42,8 +42,8 @@ test_dates.each do |date|
              else
                "平日"
              end
-  
-  puts "#{date} (#{date.strftime('%A')}): #{day_type} - 営業日: #{is_business_day ? 'はい' : 'いいえ'}"
+
+  puts "#{date} (#{date.strftime("%A")}): #{day_type} - 営業日: #{is_business_day ? "はい" : "いいえ"}"
 end
 
 puts
@@ -55,26 +55,24 @@ puts
 puts "2. 営業日の加算・減算"
 puts "-" * 40
 
-base_date = Date.new(2024, 1, 5)  # 金曜日
-puts "基準日: #{base_date} (#{base_date.strftime('%A')})"
+base_date = Date.new(2024, 1, 5) # 金曜日
+puts "基準日: #{base_date} (#{base_date.strftime("%A")})"
 
 # 営業日加算
 [1, 3, 5, 10].each do |days|
   result = JapaneseBusinessDays.add_business_days(base_date, days)
-  puts "  +#{days}営業日後: #{result} (#{result.strftime('%A')})"
-end
+  puts "  +#{days}営業日後: #{result} (#{result.strftime("%A")})"
 
-# 営業日減算
-[1, 3, 5, 10].each do |days|
+  # 営業日減算
   result = JapaneseBusinessDays.subtract_business_days(base_date, days)
-  puts "  -#{days}営業日前: #{result} (#{result.strftime('%A')})"
+  puts "  -#{days}営業日前: #{result} (#{result.strftime("%A")})"
 end
 
 # 次の営業日・前の営業日
 next_bday = JapaneseBusinessDays.next_business_day(base_date)
 prev_bday = JapaneseBusinessDays.previous_business_day(base_date)
-puts "  次の営業日: #{next_bday} (#{next_bday.strftime('%A')})"
-puts "  前の営業日: #{prev_bday} (#{prev_bday.strftime('%A')})"
+puts "  次の営業日: #{next_bday} (#{next_bday.strftime("%A")})"
+puts "  前の営業日: #{prev_bday} (#{prev_bday.strftime("%A")})"
 
 puts
 
@@ -125,10 +123,10 @@ puts "  2024/1/1は営業日か: #{JapaneseBusinessDays.business_day?(Date.new(2
 JapaneseBusinessDays.configure do |config|
   # 大晦日を祝日に追加
   config.add_holiday(Date.new(2024, 12, 31))
-  
+
   # 元日を営業日として扱う（祝日を上書き）
   config.add_business_day(Date.new(2024, 1, 1))
-  
+
   # 土曜日のみを週末に設定（日曜日は営業日）
   config.weekend_days = [6]
 end
@@ -206,9 +204,10 @@ def last_business_day_of_month(year, month)
   # 月の最終日から逆算して最初の営業日を見つける
   last_day = Date.new(year, month, -1)
   current_date = last_day
-  
+
   loop do
     return current_date if JapaneseBusinessDays.business_day?(current_date)
+
     current_date -= 1
   end
 end
@@ -223,12 +222,12 @@ end
 def business_days_in_range(start_date, end_date)
   business_days = []
   current_date = start_date
-  
+
   while current_date <= end_date
     business_days << current_date if JapaneseBusinessDays.business_day?(current_date)
     current_date += 1
   end
-  
+
   business_days
 end
 
@@ -238,7 +237,7 @@ business_days_list = business_days_in_range(range_start, range_end)
 
 puts "\n#{range_start} から #{range_end} までの営業日:"
 business_days_list.each do |date|
-  puts "  #{date} (#{date.strftime('%A')})"
+  puts "  #{date} (#{date.strftime("%A")})"
 end
 
 puts
@@ -251,7 +250,7 @@ puts "7. パフォーマンス考慮事項"
 puts "-" * 40
 
 # 大量計算のパフォーマンステスト
-require 'benchmark'
+require "benchmark"
 
 puts "1000回の営業日計算のパフォーマンス:"
 time = Benchmark.measure do
@@ -287,17 +286,15 @@ puts "-" * 40
 test_cases = [
   { desc: "nil日付", code: -> { JapaneseBusinessDays.business_day?(nil) } },
   { desc: "無効な日付文字列", code: -> { JapaneseBusinessDays.business_day?("invalid-date") } },
-  { desc: "無効な年", code: -> { JapaneseBusinessDays.holidays_in_year(99999) } },
+  { desc: "無効な年", code: -> { JapaneseBusinessDays.holidays_in_year(99_999) } },
   { desc: "無効な営業日数", code: -> { JapaneseBusinessDays.add_business_days(Date.today, "invalid") } }
 ]
 
 test_cases.each do |test_case|
-  begin
-    test_case[:code].call
-    puts "  #{test_case[:desc]}: エラーが発生しませんでした（予期しない結果）"
-  rescue JapaneseBusinessDays::Error => e
-    puts "  #{test_case[:desc]}: #{e.class.name} - #{e.message.split('|').first.strip}"
-  end
+  test_case[:code].call
+  puts "  #{test_case[:desc]}: エラーが発生しませんでした（予期しない結果）"
+rescue JapaneseBusinessDays::Error => e
+  puts "  #{test_case[:desc]}: #{e.class.name} - #{e.message.split("|").first.strip}"
 end
 
 puts

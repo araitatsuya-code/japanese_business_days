@@ -2,7 +2,7 @@
 
 RSpec.describe JapaneseBusinessDays do
   it "has a version number" do
-    expect(JapaneseBusinessDays::VERSION).not_to be nil
+    expect(JapaneseBusinessDays::VERSION).not_to be_nil
   end
 
   it "loads core interfaces successfully" do
@@ -132,20 +132,20 @@ RSpec.describe JapaneseBusinessDays do
       context "要件4.2: 年間祝日取得" do
         it "指定年のすべての日本の祝日を返す" do
           holidays = JapaneseBusinessDays.holidays_in_year(2024)
-          
+
           expect(holidays).to be_an(Array)
           expect(holidays).not_to be_empty
-          
+
           # 固定祝日の確認
           holiday_dates = holidays.map(&:date)
           expect(holiday_dates).to include(Date.new(2024, 1, 1))   # 元日
           expect(holiday_dates).to include(Date.new(2024, 2, 11))  # 建国記念の日
           expect(holiday_dates).to include(Date.new(2024, 4, 29))  # 昭和の日
-          
+
           # ハッピーマンデー祝日の確認
           expect(holiday_dates).to include(Date.new(2024, 1, 8))   # 成人の日
           expect(holiday_dates).to include(Date.new(2024, 7, 15))  # 海の日
-          
+
           # 計算祝日の確認（春分の日・秋分の日）
           expect(holiday_dates.any? { |d| d.month == 3 && d.day.between?(19, 22) }).to be true
           expect(holiday_dates.any? { |d| d.month == 9 && d.day.between?(21, 24) }).to be true
@@ -181,29 +181,29 @@ RSpec.describe JapaneseBusinessDays do
           JapaneseBusinessDays.configure do |config|
             config_received = config
           end
-          
+
           expect(config_received).to be_a(JapaneseBusinessDays::Configuration)
           expect(config_received).to eq(JapaneseBusinessDays.configuration)
         end
 
         it "カスタム非営業日を設定できる" do
           custom_holiday = Date.new(2024, 12, 31)
-          
+
           JapaneseBusinessDays.configure do |config|
             config.add_holiday(custom_holiday)
           end
-          
+
           expect(JapaneseBusinessDays.business_day?(custom_holiday)).to be false
         end
 
         it "カスタム営業日を設定できる" do
           # 元日を営業日として上書き
           new_years_day = Date.new(2024, 1, 1)
-          
+
           JapaneseBusinessDays.configure do |config|
             config.add_business_day(new_years_day)
           end
-          
+
           expect(JapaneseBusinessDays.business_day?(new_years_day)).to be true
         end
 
@@ -212,11 +212,11 @@ RSpec.describe JapaneseBusinessDays do
           JapaneseBusinessDays.configure do |config|
             config.weekend_days = [5, 6]
           end
-          
+
           # 金曜日が非営業日になる
           friday = Date.new(2024, 1, 12) # 金曜日
           expect(JapaneseBusinessDays.business_day?(friday)).to be false
-          
+
           # 日曜日が営業日になる
           sunday = Date.new(2024, 1, 14) # 日曜日
           expect(JapaneseBusinessDays.business_day?(sunday)).to be true
@@ -348,27 +348,27 @@ RSpec.describe JapaneseBusinessDays do
     describe "エラーハンドリング" do
       context "要件8.1-8.2: 入力検証とエラーメッセージ" do
         it "無効な日付形式でInvalidDateErrorを発生させる" do
-          expect {
+          expect do
             JapaneseBusinessDays.business_days_between("invalid-date", Date.today)
-          }.to raise_error(JapaneseBusinessDays::InvalidDateError)
+          end.to raise_error(JapaneseBusinessDays::InvalidDateError)
         end
 
         it "nilが渡された場合にInvalidArgumentErrorを発生させる" do
-          expect {
+          expect do
             JapaneseBusinessDays.business_day?(nil)
-          }.to raise_error(JapaneseBusinessDays::InvalidArgumentError)
+          end.to raise_error(JapaneseBusinessDays::InvalidArgumentError)
         end
 
         it "無効な引数タイプでInvalidArgumentErrorを発生させる" do
-          expect {
+          expect do
             JapaneseBusinessDays.holiday?(123)
-          }.to raise_error(JapaneseBusinessDays::InvalidArgumentError)
+          end.to raise_error(JapaneseBusinessDays::InvalidArgumentError)
         end
 
         it "無効な年でInvalidArgumentErrorを発生させる" do
-          expect {
+          expect do
             JapaneseBusinessDays.holidays_in_year("2024")
-          }.to raise_error(JapaneseBusinessDays::InvalidArgumentError)
+          end.to raise_error(JapaneseBusinessDays::InvalidArgumentError)
         end
       end
     end
@@ -390,13 +390,13 @@ RSpec.describe JapaneseBusinessDays do
       it "Configurationと正しく連携する" do
         # 設定変更が営業日計算に反映されることを確認
         custom_holiday = Date.new(2024, 1, 10)
-        
+
         JapaneseBusinessDays.configure do |config|
           config.add_holiday(custom_holiday)
         end
-        
+
         expect(JapaneseBusinessDays.business_day?(custom_holiday)).to be false
-        
+
         # テスト後にリセット
         JapaneseBusinessDays.configuration.reset!
       end
@@ -406,14 +406,14 @@ RSpec.describe JapaneseBusinessDays do
       context "要件6.1-6.4: 高度な最適化" do
         it "大量の営業日計算を効率的に処理する" do
           start_time = Time.now
-          
+
           # 100回の営業日計算を実行
           100.times do |i|
             start_date = Date.new(2024, 1, 1) + i
             end_date = start_date + 30
             JapaneseBusinessDays.business_days_between(start_date, end_date)
           end
-          
+
           elapsed_time = Time.now - start_time
           expect(elapsed_time).to be < 1.0 # 1秒以内に完了
         end
@@ -421,11 +421,11 @@ RSpec.describe JapaneseBusinessDays do
         it "祝日データのキャッシュが機能する" do
           # 同じ年の祝日を複数回取得してもパフォーマンスが劣化しない
           start_time = Time.now
-          
+
           10.times do
             JapaneseBusinessDays.holidays_in_year(2024)
           end
-          
+
           elapsed_time = Time.now - start_time
           expect(elapsed_time).to be < 0.1 # 100ms以内に完了
         end

@@ -18,16 +18,14 @@ module JapaneseBusinessDays
     # @return [Array<Holiday>, nil] キャッシュされた祝日リスト、キャッシュにない場合はnil
     def cached_holidays_for_year(year)
       validate_year!(year)
-      
-      if @cache.key?(year)
-        # LRU更新: アクセス順序を更新
-        update_access_order(year)
-        # アクセス頻度を更新
-        @access_count[year] = (@access_count[year] || 0) + 1
-        @cache[year]
-      else
-        nil
-      end
+
+      return unless @cache.key?(year)
+
+      # LRU更新: アクセス順序を更新
+      update_access_order(year)
+      # アクセス頻度を更新
+      @access_count[year] = (@access_count[year] || 0) + 1
+      @cache[year]
     end
 
     # 祝日データをキャッシュに保存（効率的なメモリ管理）
@@ -36,13 +34,13 @@ module JapaneseBusinessDays
     def store_holidays_for_year(year, holidays)
       validate_year!(year)
       validate_holidays!(holidays)
-      
+
       # キャッシュサイズ管理（事前チェック）
       manage_cache_size_before_insert(year)
-      
+
       # メモリ効率化: 祝日配列を凍結してコピーを防ぐ
       @cache[year] = holidays.freeze
-      
+
       # アクセス管理の更新
       update_access_order(year)
       @access_count[year] = (@access_count[year] || 0) + 1
@@ -100,7 +98,7 @@ module JapaneseBusinessDays
     # キャッシュサイズ管理（挿入前チェック）
     def manage_cache_size_before_insert(new_year)
       return if @cache.size < @max_cache_size || @cache.key?(new_year)
-      
+
       # LRU + 頻度ベースの効率的な削除アルゴリズム
       evict_least_valuable_entry
     end
@@ -109,19 +107,19 @@ module JapaneseBusinessDays
     def evict_least_valuable_entry
       # アクセス頻度が最も低く、最近アクセスされていないエントリを選択
       candidate_year = find_eviction_candidate
-      
-      if candidate_year
-        @cache.delete(candidate_year)
-        @access_order.delete(candidate_year)
-        @access_count.delete(candidate_year)
-      end
+
+      return unless candidate_year
+
+      @cache.delete(candidate_year)
+      @access_order.delete(candidate_year)
+      @access_count.delete(candidate_year)
     end
 
     # 削除候補を効率的に見つける
     def find_eviction_candidate
       # アクセス頻度が1以下で最も古いものを優先
       low_frequency_years = @access_count.select { |_, count| count <= 1 }.keys
-      
+
       if low_frequency_years.any?
         # 最も古いアクセスのものを選択
         low_frequency_years.min_by { |year| @access_order.index(year) || Float::INFINITY }
@@ -148,31 +146,27 @@ module JapaneseBusinessDays
     # @param year [Integer] 検証する年
     # @raise [InvalidArgumentError] 無効な年の場合
     def validate_year!(year)
-      unless year.is_a?(Integer) && year > 0
-        raise InvalidArgumentError, "Year must be a positive integer, got #{year.inspect}"
-      end
+      return if year.is_a?(Integer) && year.positive?
+
+      raise InvalidArgumentError, "Year must be a positive integer, got #{year.inspect}"
     end
 
     # 祝日リストの検証
     # @param holidays [Array<Holiday>] 検証する祝日リスト
     # @raise [InvalidArgumentError] 無効な祝日リストの場合
     def validate_holidays!(holidays)
-      unless holidays.is_a?(Array)
-        raise InvalidArgumentError, "Holidays must be an array, got #{holidays.class}"
-      end
-      
+      raise InvalidArgumentError, "Holidays must be an array, got #{holidays.class}" unless holidays.is_a?(Array)
+
       holidays.each_with_index do |holiday, index|
-        unless holiday.is_a?(Holiday)
-          raise InvalidArgumentError, "All elements must be Holiday objects, got #{holiday.class} at index #{index}"
-        end
+        raise InvalidArgumentError, "All elements must be Holiday objects, got #{holiday.class} at index #{index}" unless holiday.is_a?(Holiday)
       end
     end
 
     # ヒット率を計算
     def calculate_hit_rate
       total_accesses = @access_count.values.sum
-      return 0.0 if total_accesses == 0
-      
+      return 0.0 if total_accesses.zero?
+
       cache_hits = @access_count.size
       (cache_hits.to_f / total_accesses * 100).round(2)
     end
@@ -180,7 +174,7 @@ module JapaneseBusinessDays
     # 最もアクセスされた年を取得
     def most_accessed_year
       return nil if @access_count.empty?
-      
+
       @access_count.max_by { |_, count| count }&.first
     end
 
@@ -188,7 +182,7 @@ module JapaneseBusinessDays
     def estimate_memory_usage
       base_size = @cache.size * 100 # 概算: 年あたり100バイト
       access_overhead = (@access_order.size + @access_count.size) * 20 # 管理データ
-      
+
       "#{base_size + access_overhead} bytes (estimated)"
     end
   end

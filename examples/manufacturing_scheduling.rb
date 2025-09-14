@@ -5,8 +5,8 @@
 # このファイルは、製造業での生産計画、納期管理、
 # 設備メンテナンススケジュールなどの営業日計算例を示します。
 
-require 'japanese_business_days'
-require 'date'
+require "japanese_business_days"
+require "date"
 
 puts "=== 製造業での生産スケジュール管理サンプル ==="
 puts
@@ -17,13 +17,13 @@ JapaneseBusinessDays.configure do |config|
   (Date.new(2024, 8, 13)..Date.new(2024, 8, 16)).each do |date|
     config.add_holiday(date)
   end
-  
+
   # 年末年始の特別休暇を延長
   config.add_holiday(Date.new(2024, 12, 30))
   config.add_holiday(Date.new(2024, 12, 31))
   config.add_holiday(Date.new(2025, 1, 2))
   config.add_holiday(Date.new(2025, 1, 3))
-  
+
   # 一部の祝日は稼働日として扱う
   config.add_business_day(Date.new(2024, 5, 3))  # 憲法記念日
   config.add_business_day(Date.new(2024, 5, 4))  # みどりの日
@@ -41,20 +41,20 @@ class ProductionScheduler
   def initialize
     @production_calendar = []
   end
-  
+
   def calculate_delivery_date(order_date, production_days)
     # 受注日から生産開始日を計算（翌営業日から開始）
     production_start = JapaneseBusinessDays.next_business_day(order_date)
-    
+
     # 生産完了日を計算
     production_end = JapaneseBusinessDays.add_business_days(production_start, production_days - 1)
-    
+
     # 出荷日（生産完了の翌営業日）
     shipping_date = JapaneseBusinessDays.next_business_day(production_end)
-    
+
     # 納期（出荷から2営業日後）
     delivery_date = JapaneseBusinessDays.add_business_days(shipping_date, 2)
-    
+
     {
       order_date: order_date,
       production_start: production_start,
@@ -64,7 +64,7 @@ class ProductionScheduler
       total_lead_time: JapaneseBusinessDays.business_days_between(order_date, delivery_date)
     }
   end
-  
+
   def batch_schedule(orders)
     orders.map do |order|
       schedule = calculate_delivery_date(order[:order_date], order[:production_days])
@@ -80,7 +80,7 @@ end
 orders = [
   { product_name: "製品A", quantity: 100, order_date: Date.new(2024, 1, 15), production_days: 5 },
   { product_name: "製品B", quantity: 200, order_date: Date.new(2024, 1, 16), production_days: 8 },
-  { product_name: "製品C", quantity: 50,  order_date: Date.new(2024, 1, 17), production_days: 3 },
+  { product_name: "製品C", quantity: 50,  order_date: Date.new(2024, 1, 17), production_days: 3 }
 ]
 
 scheduler = ProductionScheduler.new
@@ -107,15 +107,13 @@ class MaintenanceScheduler
   def initialize
     @maintenance_records = []
   end
-  
+
   def schedule_routine_maintenance(equipment_name, last_maintenance_date, interval_days)
     next_maintenance = JapaneseBusinessDays.add_business_days(last_maintenance_date, interval_days)
-    
+
     # メンテナンス日が祝日の場合は前営業日に調整
-    if JapaneseBusinessDays.holiday?(next_maintenance)
-      next_maintenance = JapaneseBusinessDays.previous_business_day(next_maintenance)
-    end
-    
+    next_maintenance = JapaneseBusinessDays.previous_business_day(next_maintenance) if JapaneseBusinessDays.holiday?(next_maintenance)
+
     {
       equipment_name: equipment_name,
       last_maintenance: last_maintenance_date,
@@ -124,36 +122,36 @@ class MaintenanceScheduler
       days_until_maintenance: JapaneseBusinessDays.business_days_between(Date.today, next_maintenance)
     }
   end
-  
+
   def generate_maintenance_calendar(year, month)
     # 指定月のメンテナンス予定を生成
     start_date = Date.new(year, month, 1)
     end_date = Date.new(year, month, -1)
-    
+
     maintenance_dates = []
     current_date = start_date
-    
+
     while current_date <= end_date
       if JapaneseBusinessDays.business_day?(current_date)
         # 設備ごとのメンテナンス周期をチェック
         equipment_list.each do |equipment|
-          if maintenance_due?(equipment, current_date)
-            maintenance_dates << {
-              date: current_date,
-              equipment: equipment[:name],
-              type: equipment[:maintenance_type]
-            }
-          end
+          next unless maintenance_due?(equipment, current_date)
+
+          maintenance_dates << {
+            date: current_date,
+            equipment: equipment[:name],
+            type: equipment[:maintenance_type]
+          }
         end
       end
       current_date += 1
     end
-    
+
     maintenance_dates
   end
-  
+
   private
-  
+
   def equipment_list
     [
       { name: "プレス機A", maintenance_type: "定期点検", cycle_days: 30 },
@@ -162,10 +160,10 @@ class MaintenanceScheduler
       { name: "検査装置C", maintenance_type: "精度確認", cycle_days: 60 }
     ]
   end
-  
+
   def maintenance_due?(equipment, date)
     # 簡略化された判定ロジック（実際はデータベースから取得）
-    (date.day % equipment[:cycle_days]) == 0
+    (date.day % equipment[:cycle_days]).zero?
   end
 end
 
@@ -190,7 +188,7 @@ equipment_schedules.each do |equipment|
     equipment[:last_maintenance],
     equipment[:interval]
   )
-  
+
   puts "#{schedule[:equipment_name].ljust(14)} | #{schedule[:last_maintenance]} | #{schedule[:next_maintenance]} | #{schedule[:interval_days].to_s.ljust(6)} | #{schedule[:days_until_maintenance]}日"
 end
 
@@ -212,23 +210,23 @@ class ProcurementScheduler
       "包装材" => { lead_time: 2, order_cycle: 5 }
     }
   end
-  
+
   def calculate_order_schedule(material_name, required_date, safety_days = 2)
     supplier_info = @suppliers[material_name]
     return nil unless supplier_info
-    
+
     # 安全在庫を考慮した必要日
     target_delivery = JapaneseBusinessDays.subtract_business_days(required_date, safety_days)
-    
+
     # 発注日を計算（リードタイムを考慮）
     order_date = JapaneseBusinessDays.subtract_business_days(target_delivery, supplier_info[:lead_time])
-    
+
     # 発注サイクルに合わせて調整
     adjusted_order_date = adjust_to_order_cycle(order_date, supplier_info[:order_cycle])
-    
+
     # 実際の納期を再計算
     actual_delivery = JapaneseBusinessDays.add_business_days(adjusted_order_date, supplier_info[:lead_time])
-    
+
     {
       material_name: material_name,
       required_date: required_date,
@@ -239,48 +237,48 @@ class ProcurementScheduler
       safety_margin: JapaneseBusinessDays.business_days_between(actual_delivery, required_date)
     }
   end
-  
+
   def generate_procurement_plan(production_schedule)
     procurement_plan = []
-    
+
     production_schedule.each do |production|
       materials_needed = get_materials_for_product(production[:product_name])
-      
+
       materials_needed.each do |material|
         order_info = calculate_order_schedule(
           material[:name],
           production[:production_start],
           material[:safety_days] || 2
         )
-        
-        if order_info
-          procurement_plan << order_info.merge(
-            product_name: production[:product_name],
-            quantity_needed: material[:quantity]
-          )
-        end
+
+        next unless order_info
+
+        procurement_plan << order_info.merge(
+          product_name: production[:product_name],
+          quantity_needed: material[:quantity]
+        )
       end
     end
-    
+
     procurement_plan.sort_by { |item| item[:order_date] }
   end
-  
+
   private
-  
+
   def adjust_to_order_cycle(order_date, cycle_days)
     # 発注サイクルに合わせて最適な発注日を選択
-    base_date = Date.new(2024, 1, 1)  # 基準日
+    base_date = Date.new(2024, 1, 1) # 基準日
     days_from_base = (order_date - base_date).to_i
     cycle_position = days_from_base % cycle_days
-    
-    if cycle_position == 0
+
+    if cycle_position.zero?
       order_date
     else
       # 前回の発注日に調整
       JapaneseBusinessDays.subtract_business_days(order_date, cycle_position)
     end
   end
-  
+
   def get_materials_for_product(product_name)
     # 製品ごとの必要材料（簡略化）
     case product_name
@@ -334,10 +332,10 @@ class QualityControlScheduler
       "出荷検査" => { duration: 1, frequency: :daily }
     }
   end
-  
+
   def schedule_inspections(production_schedule)
     inspection_schedule = []
-    
+
     production_schedule.each do |production|
       # 入荷検査（生産開始前日）
       incoming_inspection = JapaneseBusinessDays.previous_business_day(production[:production_start])
@@ -348,13 +346,13 @@ class QualityControlScheduler
         duration: 1,
         inspector: assign_inspector("入荷検査", incoming_inspection)
       }
-      
+
       # 工程検査（生産期間中）
       process_inspection_dates = calculate_process_inspection_dates(
         production[:production_start],
         production[:production_end]
       )
-      
+
       process_inspection_dates.each do |date|
         inspection_schedule << {
           date: date,
@@ -364,7 +362,7 @@ class QualityControlScheduler
           inspector: assign_inspector("工程検査", date)
         }
       end
-      
+
       # 最終検査（生産完了日）
       inspection_schedule << {
         date: production[:production_end],
@@ -373,7 +371,7 @@ class QualityControlScheduler
         duration: 2,
         inspector: assign_inspector("最終検査", production[:production_end])
       }
-      
+
       # 出荷検査（出荷日当日）
       inspection_schedule << {
         date: production[:shipping_date],
@@ -383,36 +381,34 @@ class QualityControlScheduler
         inspector: assign_inspector("出荷検査", production[:shipping_date])
       }
     end
-    
+
     inspection_schedule.sort_by { |item| [item[:date], item[:type]] }
   end
-  
+
   private
-  
+
   def calculate_process_inspection_dates(start_date, end_date)
     dates = []
     current_date = start_date
-    
+
     while current_date <= end_date
-      if JapaneseBusinessDays.business_day?(current_date)
-        dates << current_date
-      end
+      dates << current_date if JapaneseBusinessDays.business_day?(current_date)
       current_date += 1
     end
-    
+
     # 2日に1回の工程検査
     dates.select.with_index { |_, index| index.even? }
   end
-  
+
   def assign_inspector(inspection_type, date)
     # 簡略化された検査員アサインロジック
     inspectors = {
-      "入荷検査" => ["田中", "佐藤"],
-      "工程検査" => ["山田", "鈴木", "高橋"],
-      "最終検査" => ["田中", "山田"],
-      "出荷検査" => ["佐藤", "鈴木"]
+      "入荷検査" => %w[田中 佐藤],
+      "工程検査" => %w[山田 鈴木 高橋],
+      "最終検査" => %w[田中 山田],
+      "出荷検査" => %w[佐藤 鈴木]
     }
-    
+
     available_inspectors = inspectors[inspection_type] || ["未定"]
     available_inspectors[date.day % available_inspectors.length]
   end
@@ -442,15 +438,15 @@ puts "-" * 40
 class CapacityAnalyzer
   def initialize
     @daily_capacity = {
-      "製品A" => 20,  # 1日あたりの生産可能数
+      "製品A" => 20, # 1日あたりの生産可能数
       "製品B" => 15,
       "製品C" => 30
     }
   end
-  
+
   def analyze_monthly_capacity(year, month)
     business_days = get_business_days_in_month(year, month)
-    
+
     analysis = {}
     @daily_capacity.each do |product, daily_capacity|
       monthly_capacity = daily_capacity * business_days.length
@@ -461,25 +457,25 @@ class CapacityAnalyzer
         business_days_list: business_days
       }
     end
-    
+
     analysis
   end
-  
+
   def calculate_production_feasibility(orders, year, month)
     capacity_analysis = analyze_monthly_capacity(year, month)
     feasibility_report = {}
-    
+
     # 製品別の受注数量を集計
     order_summary = orders.group_by { |order| order[:product_name] }
                           .transform_values { |orders| orders.sum { |order| order[:quantity] } }
-    
+
     order_summary.each do |product, total_quantity|
       capacity_info = capacity_analysis[product]
       next unless capacity_info
-      
+
       feasible = total_quantity <= capacity_info[:monthly_capacity]
       utilization_rate = (total_quantity.to_f / capacity_info[:monthly_capacity] * 100).round(1)
-      
+
       feasibility_report[product] = {
         ordered_quantity: total_quantity,
         monthly_capacity: capacity_info[:monthly_capacity],
@@ -488,26 +484,24 @@ class CapacityAnalyzer
         excess_quantity: feasible ? 0 : total_quantity - capacity_info[:monthly_capacity]
       }
     end
-    
+
     feasibility_report
   end
-  
+
   private
-  
+
   def get_business_days_in_month(year, month)
     start_date = Date.new(year, month, 1)
     end_date = Date.new(year, month, -1)
-    
+
     business_days = []
     current_date = start_date
-    
+
     while current_date <= end_date
-      if JapaneseBusinessDays.business_day?(current_date)
-        business_days << current_date
-      end
+      business_days << current_date if JapaneseBusinessDays.business_day?(current_date)
       current_date += 1
     end
-    
+
     business_days
   end
 end

@@ -25,7 +25,7 @@ module JapaneseBusinessDays
     attr_reader :date, :name, :type
 
     # 有効な祝日タイプ
-    VALID_TYPES = [:fixed, :calculated, :happy_monday, :substitute].freeze
+    VALID_TYPES = %i[fixed calculated happy_monday substitute].freeze
 
     # 祝日オブジェクトを初期化します
     #
@@ -42,7 +42,7 @@ module JapaneseBusinessDays
       validate_date!(date)
       validate_name!(name)
       validate_type!(type)
-      
+
       @date = date
       @name = name
       @type = type
@@ -99,27 +99,27 @@ module JapaneseBusinessDays
     # @param date [Date] 検証する日付
     # @raise [InvalidArgumentError] 無効な日付の場合
     def validate_date!(date)
-      unless date.is_a?(Date)
-        raise InvalidArgumentError, "Date must be a Date object, got #{date.class}"
-      end
+      return if date.is_a?(Date)
+
+      raise InvalidArgumentError, "Date must be a Date object, got #{date.class}"
     end
 
     # 祝日名の検証
     # @param name [String] 検証する祝日名
     # @raise [InvalidArgumentError] 無効な祝日名の場合
     def validate_name!(name)
-      unless name.is_a?(String) && !name.strip.empty?
-        raise InvalidArgumentError, "Name must be a non-empty string, got #{name.inspect}"
-      end
+      return if name.is_a?(String) && !name.strip.empty?
+
+      raise InvalidArgumentError, "Name must be a non-empty string, got #{name.inspect}"
     end
 
     # 祝日タイプの検証
     # @param type [Symbol] 検証する祝日タイプ
     # @raise [InvalidArgumentError] 無効な祝日タイプの場合
     def validate_type!(type)
-      unless VALID_TYPES.include?(type)
-        raise InvalidArgumentError, "Type must be one of #{VALID_TYPES.join(', ')}, got #{type.inspect}"
-      end
+      return if VALID_TYPES.include?(type)
+
+      raise InvalidArgumentError, "Type must be one of #{VALID_TYPES.join(", ")}, got #{type.inspect}"
     end
   end
 end

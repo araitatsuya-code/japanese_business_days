@@ -55,7 +55,7 @@ RSpec.describe JapaneseBusinessDays::CacheManager do
   describe "#store_holidays_for_year" do
     it "祝日データをキャッシュに保存する" do
       cache_manager.store_holidays_for_year(2024, holidays_2024)
-      
+
       expect(cache_manager.cached_holidays_for_year(2024)).to eq(holidays_2024)
       expect(cache_manager.cache_size).to eq(1)
     end
@@ -63,7 +63,7 @@ RSpec.describe JapaneseBusinessDays::CacheManager do
     it "保存されたデータは凍結される" do
       cache_manager.store_holidays_for_year(2024, holidays_2024)
       cached_data = cache_manager.cached_holidays_for_year(2024)
-      
+
       expect(cached_data).to be_frozen
     end
 
@@ -96,9 +96,9 @@ RSpec.describe JapaneseBusinessDays::CacheManager do
 
     it "すべてのキャッシュをクリアする" do
       expect(cache_manager.cache_size).to eq(2)
-      
+
       cache_manager.clear_cache
-      
+
       expect(cache_manager.cache_size).to eq(0)
       expect(cache_manager.cached_holidays_for_year(2024)).to be_nil
       expect(cache_manager.cached_holidays_for_year(2025)).to be_nil
@@ -113,7 +113,7 @@ RSpec.describe JapaneseBusinessDays::CacheManager do
 
     it "指定した年のキャッシュのみクリアする" do
       cache_manager.clear_cache_for_year(2024)
-      
+
       expect(cache_manager.cached_holidays_for_year(2024)).to be_nil
       expect(cache_manager.cached_holidays_for_year(2025)).to eq([])
       expect(cache_manager.cache_size).to eq(1)
@@ -130,10 +130,10 @@ RSpec.describe JapaneseBusinessDays::CacheManager do
   describe "#cache_size" do
     it "キャッシュサイズを返す" do
       expect(cache_manager.cache_size).to eq(0)
-      
+
       cache_manager.store_holidays_for_year(2024, holidays_2024)
       expect(cache_manager.cache_size).to eq(1)
-      
+
       cache_manager.store_holidays_for_year(2025, [])
       expect(cache_manager.cache_size).to eq(2)
     end
@@ -142,11 +142,11 @@ RSpec.describe JapaneseBusinessDays::CacheManager do
   describe "#cached_years" do
     it "キャッシュされている年のソート済みリストを返す" do
       expect(cache_manager.cached_years).to eq([])
-      
+
       cache_manager.store_holidays_for_year(2025, [])
       cache_manager.store_holidays_for_year(2024, holidays_2024)
       cache_manager.store_holidays_for_year(2023, [])
-      
+
       expect(cache_manager.cached_years).to eq([2023, 2024, 2025])
     end
   end
@@ -160,10 +160,10 @@ RSpec.describe JapaneseBusinessDays::CacheManager do
       small_cache_manager.store_holidays_for_year(2023, [])
       small_cache_manager.store_holidays_for_year(2024, holidays_2024)
       expect(small_cache_manager.cache_size).to eq(3)
-      
+
       # 2023にアクセスして最近使用済みにする
       small_cache_manager.cached_holidays_for_year(2023)
-      
+
       # 新しいエントリを追加すると最も古い2022が削除される
       small_cache_manager.store_holidays_for_year(2025, [])
       expect(small_cache_manager.cache_size).to eq(3)
@@ -178,13 +178,13 @@ RSpec.describe JapaneseBusinessDays::CacheManager do
       small_cache_manager.store_holidays_for_year(2022, [])
       small_cache_manager.store_holidays_for_year(2023, [])
       small_cache_manager.store_holidays_for_year(2024, holidays_2024)
-      
+
       # 2023を頻繁にアクセス
       5.times { small_cache_manager.cached_holidays_for_year(2023) }
-      
+
       # 新しいエントリを追加
       small_cache_manager.store_holidays_for_year(2025, [])
-      
+
       # 頻繁にアクセスされた2023は残っているべき
       expect(small_cache_manager.cached_holidays_for_year(2023)).to eq([])
       expect(small_cache_manager.cached_holidays_for_year(2025)).to eq([])
@@ -200,7 +200,7 @@ RSpec.describe JapaneseBusinessDays::CacheManager do
 
     it "キャッシュ統計情報を返す" do
       stats = cache_manager.cache_stats
-      
+
       expect(stats[:size]).to eq(1)
       expect(stats[:max_size]).to eq(10)
       expect(stats[:most_accessed_year]).to eq(2024)
@@ -212,7 +212,7 @@ RSpec.describe JapaneseBusinessDays::CacheManager do
   describe "#fast_access_available?" do
     it "キャッシュされている年に対してtrueを返す" do
       expect(cache_manager.fast_access_available?(2024)).to be false
-      
+
       cache_manager.store_holidays_for_year(2024, holidays_2024)
       expect(cache_manager.fast_access_available?(2024)).to be true
     end
@@ -222,7 +222,7 @@ RSpec.describe JapaneseBusinessDays::CacheManager do
     describe "#cache_hit?" do
       it "キャッシュにヒットした場合trueを返す" do
         expect(cache_manager.send(:cache_hit?, 2024)).to be false
-        
+
         cache_manager.store_holidays_for_year(2024, holidays_2024)
         expect(cache_manager.send(:cache_hit?, 2024)).to be true
       end

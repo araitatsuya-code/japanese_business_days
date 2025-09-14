@@ -25,7 +25,7 @@ module JapaneseBusinessDays
     attr_reader :additional_holidays, :additional_business_days, :weekend_days
 
     # 有効な曜日（0=日曜日, 6=土曜日）
-    VALID_WEEKDAYS = (0..6).freeze
+    VALID_WEEKDAYS = (0..6)
 
     def initialize
       @additional_holidays = []
@@ -106,9 +106,9 @@ module JapaneseBusinessDays
     def add_holiday(date)
       validate_not_nil!(date, "date")
       normalized_date = normalize_date(date)
-      unless @additional_holidays.include?(normalized_date)
-        @additional_holidays << normalized_date
-      end
+      return if @additional_holidays.include?(normalized_date)
+
+      @additional_holidays << normalized_date
     end
 
     # カスタム営業日を追加します（祝日の上書き）
@@ -127,9 +127,9 @@ module JapaneseBusinessDays
     def add_business_day(date)
       validate_not_nil!(date, "date")
       normalized_date = normalize_date(date)
-      unless @additional_business_days.include?(normalized_date)
-        @additional_business_days << normalized_date
-      end
+      return if @additional_business_days.include?(normalized_date)
+
+      @additional_business_days << normalized_date
     end
 
     # 指定した日付がカスタム祝日かどうかを判定します
@@ -179,7 +179,7 @@ module JapaneseBusinessDays
     #
     # すべてのカスタム設定をクリアし、デフォルト値に戻します。
     # - additional_holidays: 空配列
-    # - additional_business_days: 空配列  
+    # - additional_business_days: 空配列
     # - weekend_days: [0, 6] (日曜日と土曜日)
     #
     # @example 設定のリセット
@@ -223,22 +223,20 @@ module JapaneseBusinessDays
     # @param param_name [String] パラメータ名
     # @raise [InvalidArgumentError] 値がnilの場合
     def validate_not_nil!(value, param_name)
-      if value.nil?
-        raise InvalidArgumentError, "#{param_name} cannot be nil"
-      end
+      return unless value.nil?
+
+      raise InvalidArgumentError, "#{param_name} cannot be nil"
     end
 
     # 日付文字列の検証
     # @param date_string [String] 検証する日付文字列
     # @raise [InvalidArgumentError] 空文字列の場合
     def validate_date_string!(date_string)
-      if date_string.empty?
-        raise InvalidArgumentError, "Date string cannot be empty"
-      end
-      
-      if date_string.strip.empty?
-        raise InvalidArgumentError, "Date string cannot be blank"
-      end
+      raise InvalidArgumentError, "Date string cannot be empty" if date_string.empty?
+
+      return unless date_string.strip.empty?
+
+      raise InvalidArgumentError, "Date string cannot be blank"
     end
 
     # 日付配列の検証
@@ -246,14 +244,12 @@ module JapaneseBusinessDays
     # @param field_name [String] フィールド名（エラーメッセージ用）
     # @raise [InvalidArgumentError] 無効な日付配列の場合
     def validate_date_array!(dates, field_name)
-      unless dates.is_a?(Array)
-        raise InvalidArgumentError, "#{field_name} must be an Array, got #{dates.class}"
-      end
+      raise InvalidArgumentError, "#{field_name} must be an Array, got #{dates.class}" unless dates.is_a?(Array)
 
       dates.each_with_index do |date, index|
         unless date.is_a?(Date)
-          raise InvalidArgumentError, 
-            "#{field_name}[#{index}] must be a Date object, got #{date.class}"
+          raise InvalidArgumentError,
+                "#{field_name}[#{index}] must be a Date object, got #{date.class}"
         end
       end
     end
@@ -262,24 +258,20 @@ module JapaneseBusinessDays
     # @param days [Array<Integer>] 検証する曜日配列
     # @raise [InvalidArgumentError] 無効な曜日配列の場合
     def validate_weekend_days!(days)
-      unless days.is_a?(Array)
-        raise InvalidArgumentError, "weekend_days must be an Array, got #{days.class}"
-      end
+      raise InvalidArgumentError, "weekend_days must be an Array, got #{days.class}" unless days.is_a?(Array)
 
-      if days.empty?
-        raise InvalidArgumentError, "weekend_days cannot be empty"
-      end
+      raise InvalidArgumentError, "weekend_days cannot be empty" if days.empty?
 
       days.each_with_index do |day, index|
         unless day.is_a?(Integer) && VALID_WEEKDAYS.include?(day)
-          raise InvalidArgumentError, 
-            "weekend_days[#{index}] must be an integer between 0-6, got #{day.inspect}"
+          raise InvalidArgumentError,
+                "weekend_days[#{index}] must be an integer between 0-6, got #{day.inspect}"
         end
       end
 
-      if days.uniq.length != days.length
-        raise InvalidArgumentError, "weekend_days cannot contain duplicate values"
-      end
+      return unless days.uniq.length != days.length
+
+      raise InvalidArgumentError, "weekend_days cannot contain duplicate values"
     end
   end
 end

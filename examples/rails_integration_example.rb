@@ -6,7 +6,7 @@
 # Rails環境のシミュレーション
 module Rails
   def self.env
-    'development'
+    "development"
   end
 end
 
@@ -68,7 +68,7 @@ module ActiveRecord
 end
 
 # JapaneseBusinessDaysをロード
-require_relative '../lib/japanese_business_days'
+require_relative "../lib/japanese_business_days"
 
 # Rails統合を手動で有効化（通常は自動）
 Date.include(JapaneseBusinessDays::DateExtensions)
@@ -100,7 +100,7 @@ puts
 
 # 3. ActiveSupport::TimeWithZone での操作
 puts "3. ActiveSupport::TimeWithZone での操作"
-jst_zone = ActiveSupport::TimeZone.new('Asia/Tokyo')
+jst_zone = ActiveSupport::TimeZone.new("Asia/Tokyo")
 time_with_zone = jst_zone.local(2024, 1, 15, 9, 0, 0)
 puts "基準時刻（JST）: #{time_with_zone.time} (#{time_with_zone.time_zone.name})"
 puts "営業日?: #{time_with_zone.business_day?}"
@@ -184,7 +184,7 @@ puts "7. パフォーマンステスト"
 start_time = Time.now
 
 # 100個のActiveRecordオブジェクトで営業日計算
-records = 100.times.map do |i|
+records = Array.new(100) do |i|
   Project.new(start_date: Date.new(2024, 1, 15 + (i % 10)))
 end
 
@@ -192,7 +192,7 @@ results = records.map { |record| record.start_date.add_business_days(5) }
 
 end_time = Time.now
 puts "100件の営業日計算時間: #{((end_time - start_time) * 1000).round(2)}ms"
-puts "すべて正常に計算完了: #{results.all? { |r| r.is_a?(Date) }}"
+puts "すべて正常に計算完了: #{results.all?(Date)}"
 puts
 
 puts "=== Rails統合の使用例完了 ==="

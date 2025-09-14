@@ -176,11 +176,12 @@ module JapaneseBusinessDays
         to_date
       else
         # ActiveSupport::TimeWithZoneの場合も考慮
-        if defined?(ActiveSupport::TimeWithZone) && is_a?(ActiveSupport::TimeWithZone)
-          to_date
-        else
+        unless defined?(ActiveSupport::TimeWithZone) && is_a?(ActiveSupport::TimeWithZone)
           raise InvalidArgumentError, "Unsupported date type: #{self.class}"
         end
+
+        to_date
+
       end
     end
 
@@ -188,13 +189,11 @@ module JapaneseBusinessDays
     # @param days [Object] 検証する日数
     # @raise [InvalidArgumentError] 無効な日数の場合
     def validate_days_parameter!(days)
-      if days.nil?
-        raise InvalidArgumentError, "days cannot be nil"
-      end
-      
-      unless days.is_a?(Integer)
-        raise InvalidArgumentError, "days must be an Integer, got #{days.class}"
-      end
+      raise InvalidArgumentError, "days cannot be nil" if days.nil?
+
+      return if days.is_a?(Integer)
+
+      raise InvalidArgumentError, "days must be an Integer, got #{days.class}"
     end
 
     # 結果を元のオブジェクトの型に変換

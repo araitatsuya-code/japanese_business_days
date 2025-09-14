@@ -12,7 +12,7 @@ module JapaneseBusinessDays
     def initialize(message = nil, context: {}, suggestions: [])
       @context = context
       @suggestions = suggestions
-      
+
       enhanced_message = build_enhanced_message(message)
       super(enhanced_message)
     end
@@ -37,17 +37,17 @@ module JapaneseBusinessDays
     def build_enhanced_message(base_message)
       parts = []
       parts << base_message if base_message
-      
+
       if context.any?
         context_info = context.map { |k, v| "#{k}: #{v}" }.join(", ")
         parts << "Context: #{context_info}"
       end
-      
+
       if suggestions.any?
         suggestion_text = suggestions.map.with_index(1) { |s, i| "#{i}. #{s}" }.join("; ")
         parts << "Suggestions: #{suggestion_text}"
       end
-      
+
       parts.join(" | ")
     end
   end
@@ -61,21 +61,19 @@ module JapaneseBusinessDays
       context = options[:context] || {}
       context[:invalid_date] = invalid_date if invalid_date
       context[:expected_format] = expected_format if expected_format
-      
+
       suggestions = options[:suggestions] || []
-      if suggestions.empty?
-        suggestions = build_date_suggestions(invalid_date, expected_format)
-      end
-      
+      suggestions = build_date_suggestions(invalid_date, expected_format) if suggestions.empty?
+
       super(message, context: context, suggestions: suggestions)
     end
 
     private
 
     # 日付エラー用の提案を生成
-    def build_date_suggestions(invalid_date, expected_format)
+    def build_date_suggestions(invalid_date, _expected_format)
       suggestions = []
-      
+
       if invalid_date.is_a?(String)
         suggestions << "Use ISO format (YYYY-MM-DD) like '2024-01-01'"
         suggestions << "Ensure the date string is not empty or blank"
@@ -87,7 +85,7 @@ module JapaneseBusinessDays
         suggestions << "Use Date, Time, DateTime, or String objects"
         suggestions << "Convert your object to Date using .to_date if available"
       end
-      
+
       suggestions << "Check the date is within valid range (1000-9999 for years)"
       suggestions
     end
@@ -105,12 +103,10 @@ module JapaneseBusinessDays
       context[:received_value] = received_value if received_value
       context[:received_type] = received_value.class if received_value
       context[:expected_type] = expected_type if expected_type
-      
+
       suggestions = options[:suggestions] || []
-      if suggestions.empty?
-        suggestions = build_argument_suggestions(parameter_name, received_value, expected_type)
-      end
-      
+      suggestions = build_argument_suggestions(parameter_name, received_value, expected_type) if suggestions.empty?
+
       super(message, context: context, suggestions: suggestions)
     end
 
@@ -119,7 +115,7 @@ module JapaneseBusinessDays
     # 引数エラー用の提案を生成
     def build_argument_suggestions(parameter_name, received_value, expected_type)
       suggestions = []
-      
+
       case parameter_name
       when "days"
         suggestions << "Use positive or negative integers for business days calculation"
@@ -134,13 +130,13 @@ module JapaneseBusinessDays
         suggestions << "Use an array of integers (0=Sunday, 1=Monday, ..., 6=Saturday)"
         suggestions << "Example: [0, 6] for Sunday and Saturday"
       end
-      
+
       if received_value.nil?
         suggestions << "Provide a non-nil value for #{parameter_name}"
       elsif expected_type
         suggestions << "Convert the value to #{expected_type} before passing"
       end
-      
+
       suggestions
     end
   end
@@ -154,21 +150,19 @@ module JapaneseBusinessDays
       context = options[:context] || {}
       context[:config_key] = config_key if config_key
       context[:config_value] = config_value if config_value
-      
+
       suggestions = options[:suggestions] || []
-      if suggestions.empty?
-        suggestions = build_configuration_suggestions(config_key, config_value)
-      end
-      
+      suggestions = build_configuration_suggestions(config_key, config_value) if suggestions.empty?
+
       super(message, context: context, suggestions: suggestions)
     end
 
     private
 
     # 設定エラー用の提案を生成
-    def build_configuration_suggestions(config_key, config_value)
+    def build_configuration_suggestions(config_key, _config_value)
       suggestions = []
-      
+
       case config_key
       when "additional_holidays", "additional_business_days"
         suggestions << "Use an array of Date objects"
@@ -177,11 +171,11 @@ module JapaneseBusinessDays
         suggestions << "Use an array of integers from 0 to 6"
         suggestions << "Example: [0, 6] for Sunday and Saturday weekends"
       end
-      
+
       suggestions << "Check the configuration block syntax"
       suggestions << "Ensure all configuration values are of the correct type"
       suggestions << "Review the documentation for valid configuration options"
-      
+
       suggestions
     end
   end
@@ -199,16 +193,15 @@ module JapaneseBusinessDays
     class << self
       # 現在のログレベル
       attr_accessor :level
-      
+
       # ログ出力先
       attr_accessor :logger
 
       # ログレベルを設定
       # @param level [Symbol] ログレベル (:debug, :info, :warn, :error)
       def level=(level)
-        unless LOG_LEVELS.key?(level)
-          raise ArgumentError, "Invalid log level: #{level}. Valid levels: #{LOG_LEVELS.keys}"
-        end
+        raise ArgumentError, "Invalid log level: #{level}. Valid levels: #{LOG_LEVELS.keys}" unless LOG_LEVELS.key?(level)
+
         @level = level
       end
 
@@ -245,14 +238,12 @@ module JapaneseBusinessDays
       # @param additional_context [Hash] 追加のコンテキスト情報
       def log_error(error, additional_context = {})
         context = additional_context.dup
-        
-        if error.respond_to?(:context)
-          context.merge!(error.context)
-        end
-        
+
+        context.merge!(error.context) if error.respond_to?(:context)
+
         context[:error_class] = error.class.name
         context[:backtrace] = error.backtrace&.first(5) if error.backtrace
-        
+
         log(:error, error.message, context)
       end
 
@@ -264,9 +255,9 @@ module JapaneseBusinessDays
       # @param context [Hash] コンテキスト情報
       def log(level, message, context)
         return unless should_log?(level)
-        
+
         log_entry = build_log_entry(level, message, context)
-        
+
         if logger
           logger.send(level, log_entry)
         else
@@ -290,26 +281,26 @@ module JapaneseBusinessDays
       def build_log_entry(level, message, context)
         timestamp = Time.now.strftime("%Y-%m-%d %H:%M:%S")
         level_str = level.to_s.upcase.ljust(5)
-        
+
         entry = "[#{timestamp}] #{level_str} JapaneseBusinessDays: #{message}"
-        
+
         if context.any?
           context_str = context.map { |k, v| "#{k}=#{v.inspect}" }.join(" ")
           entry += " | #{context_str}"
         end
-        
+
         entry
       end
 
       # 標準エラー出力への出力
       # @param level [Symbol] ログレベル
       # @param log_entry [String] ログエントリ
-      def output_to_stderr(level, log_entry)
-        $stderr.puts(log_entry)
+      def output_to_stderr(_level, log_entry)
+        warn(log_entry)
       end
     end
 
     # デフォルト設定
-    self.level = ENV['JAPANESE_BUSINESS_DAYS_LOG_LEVEL']&.to_sym || :error
+    self.level = ENV["JAPANESE_BUSINESS_DAYS_LOG_LEVEL"]&.to_sym || :error
   end
 end

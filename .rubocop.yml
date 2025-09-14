@@ -1,5 +1,74 @@
+plugins:
+  - rubocop-performance
+
 AllCops:
-  TargetRubyVersion: 2.6
+  TargetRubyVersion: 3.0
+  NewCops: enable
+  SuggestExtensions: false
+  Exclude:
+    - 'vendor/**/*'
+    - 'tmp/**/*'
+    - 'bin/**/*'
+    - 'benchmark/**/*'
+
+# 長い行を許可（ドキュメントコメントのため）
+Layout/LineLength:
+  Max: 150
+  Exclude:
+    - 'spec/**/*'
+    - 'examples/**/*'
+    - 'japanese_business_days.gemspec'
+
+# ドキュメントコメントでの長いメソッド名を許可
+Naming/MethodName:
+  Enabled: false
+
+# RSpecでのブロック長を緩和
+Metrics/BlockLength:
+  Exclude:
+    - 'spec/**/*'
+    - 'japanese_business_days.gemspec'
+    - 'examples/**/*'
+
+# クラス長を緩和（包括的なクラスのため）
+Metrics/ClassLength:
+  Max: 250
+
+# モジュール長を緩和
+Metrics/ModuleLength:
+  Max: 250
+
+# メソッド長を緩和（複雑な計算メソッドのため）
+Metrics/MethodLength:
+  Max: 50
+  Exclude:
+    - 'examples/**/*'
+    - 'benchmark/**/*'
+
+# 複雑度を緩和
+Metrics/CyclomaticComplexity:
+  Max: 15
+
+Metrics/PerceivedComplexity:
+  Max: 15
+
+Metrics/AbcSize:
+  Max: 35
+  Exclude:
+    - 'examples/**/*'
+    - 'benchmark/**/*'
+
+# 日本語コメントを許可
+Style/AsciiComments:
+  Enabled: false
+
+# ドキュメントコメントを必須にしない（既にYARDで対応済み）
+Style/Documentation:
+  Enabled: false
+
+# 文字列リテラルの凍結コメントを必須にしない
+Style/FrozenStringLiteralComment:
+  Enabled: false
 
 Style/StringLiterals:
   Enabled: true
@@ -9,5 +78,74 @@ Style/StringLiteralsInInterpolation:
   Enabled: true
   EnforcedStyle: double_quotes
 
-Layout/LineLength:
-  Max: 120
+# 変数名の数字を許可
+Naming/VariableNumber:
+  Enabled: false
+
+# メソッド名の数字を許可
+Naming/MethodParameterName:
+  MinNameLength: 1
+
+# アクセサメソッド名のget_プレフィックスを許可
+Naming/AccessorMethodName:
+  Enabled: false
+
+# 述語メソッド名のis_プレフィックスを許可
+Naming/PredicatePrefix:
+  Enabled: false
+
+
+
+# ブロック内での定数定義を許可（テスト用）
+Lint/ConstantDefinitionInBlock:
+  Exclude:
+    - 'spec/**/*'
+
+# 重複したメソッド定義の警告を無効化（意図的な場合）
+Lint/DuplicateMethods:
+  Enabled: false
+
+# 同一オペランドの警告を無効化（テスト用）
+Lint/BinaryOperatorWithIdenticalOperands:
+  Exclude:
+    - 'spec/**/*'
+
+# 重複した例外処理を許可
+Lint/DuplicateRescueException:
+  Enabled: false
+
+# マルチラインブロックチェーンを許可
+Style/MultilineBlockChain:
+  Enabled: false
+
+# 組み合わせ可能なループの警告を無効化
+Style/CombinableLoops:
+  Enabled: false
+
+# ハッシュライクなcaseの警告を無効化
+Style/HashLikeCase:
+  Enabled: false
+
+# パラメータリストの長さ制限を緩和
+Metrics/ParameterLists:
+  Max: 6
+
+# Gemspec関連の警告を無効化
+Gemspec/RequiredRubyVersion:
+  Enabled: false
+
+Gemspec/DevelopmentDependencies:
+  Enabled: false
+
+# 重複ブランチの警告を無効化（意図的な場合）
+Lint/DuplicateBranch:
+  Enabled: false
+
+# 空のブロックを許可（テスト用）
+Lint/EmptyBlock:
+  Exclude:
+    - 'spec/**/*'
+
+# パフォーマンス関連の警告を緩和
+Performance/CollectionLiteralInLoop:
+  Enabled: false

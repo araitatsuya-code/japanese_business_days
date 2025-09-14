@@ -11,19 +11,67 @@ module JapaneseBusinessDays
 
   # エラークラス
   class Error < StandardError
+    attr_reader context: Hash[untyped, untyped]
+    attr_reader suggestions: Array[String]
+
+    def initialize: (?String? message, ?context: Hash[untyped, untyped], ?suggestions: Array[String]) -> void
+    def to_h: () -> Hash[Symbol, untyped]
+
+    private
+
+    def build_enhanced_message: (String? base_message) -> String
   end
 
   class InvalidDateError < Error
+    def initialize: (?String? message, ?invalid_date: untyped, ?expected_format: String?, **untyped options) -> void
+
+    private
+
+    def build_date_suggestions: (untyped invalid_date, String? expected_format) -> Array[String]
   end
 
   class InvalidArgumentError < Error
+    def initialize: (?String? message, ?parameter_name: String?, ?received_value: untyped, ?expected_type: untyped, **untyped options) -> void
+
+    private
+
+    def build_argument_suggestions: (String? parameter_name, untyped received_value, untyped expected_type) -> Array[String]
   end
 
   class ConfigurationError < Error
+    def initialize: (?String? message, ?config_key: String?, ?config_value: untyped, **untyped options) -> void
+
+    private
+
+    def build_configuration_suggestions: (String? config_key, untyped config_value) -> Array[String]
+  end
+
+  # ログ出力機能
+  module Logging
+    LOG_LEVELS: Hash[Symbol, Integer]
+
+    def self.level: () -> Symbol?
+    def self.level=: (Symbol level) -> Symbol
+    def self.logger: () -> untyped
+    def self.logger=: (untyped logger) -> untyped
+    def self.debug: (String message, ?Hash[untyped, untyped] context) -> void
+    def self.info: (String message, ?Hash[untyped, untyped] context) -> void
+    def self.warn: (String message, ?Hash[untyped, untyped] context) -> void
+    def self.error: (String message, ?Hash[untyped, untyped] context) -> void
+    def self.log_error: (Exception error, ?Hash[untyped, untyped] additional_context) -> void
+
+    private
+
+    def self.log: (Symbol level, String message, Hash[untyped, untyped] context) -> void
+    def self.should_log?: (Symbol level) -> bool
+    def self.build_log_entry: (Symbol level, String message, Hash[untyped, untyped] context) -> String
+    def self.output_to_stderr: (Symbol level, String log_entry) -> void
   end
 
   # 祝日クラス
   class Holiday
+    VALID_TYPES: Array[Symbol]
+
     attr_reader date: Date
     attr_reader name: String
     attr_reader type: holiday_type
@@ -33,6 +81,12 @@ module JapaneseBusinessDays
     def ==: (untyped other) -> bool
     def eql?: (untyped other) -> bool
     def hash: () -> Integer
+
+    private
+
+    def validate_date!: (Date date) -> void
+    def validate_name!: (String name) -> void
+    def validate_type!: (holiday_type type) -> void
   end
 
   # 設定クラス
@@ -57,6 +111,8 @@ module JapaneseBusinessDays
     private
 
     def normalize_date: (date_like date) -> Date
+    def validate_not_nil!: (untyped value, String param_name) -> void
+    def validate_date_string!: (String date_string) -> void
     def validate_date_array!: (Array[untyped] dates, String field_name) -> void
     def validate_weekend_days!: (Array[untyped] days) -> void
   end
@@ -72,17 +128,28 @@ module JapaneseBusinessDays
     def clear_cache_for_year: (Integer year) -> void
     def cache_size: () -> Integer
     def cached_years: () -> Array[Integer]
+    def cache_stats: () -> Hash[Symbol, untyped]
+    def fast_access_available?: (Integer year) -> bool
 
     private
 
-    def manage_cache_size: () -> void
+    def manage_cache_size_before_insert: (Integer new_year) -> void
+    def evict_least_valuable_entry: () -> void
+    def find_eviction_candidate: () -> Integer?
+    def update_access_order: (Integer year) -> void
     def cache_hit?: (Integer year) -> bool
     def validate_year!: (Integer year) -> void
     def validate_holidays!: (Array[Holiday] holidays) -> void
+    def calculate_hit_rate: () -> Float
+    def most_accessed_year: () -> Integer?
+    def estimate_memory_usage: () -> String
   end
 
   # 祝日計算クラス
   class HolidayCalculator
+    FIXED_HOLIDAYS: Hash[[Integer, Integer], String]
+    HAPPY_MONDAY_HOLIDAYS: Hash[[Integer, Integer], String]
+
     def initialize: () -> void
     def holiday?: (Date date) -> bool
     def holidays_in_year: (Integer year) -> Array[Holiday]
@@ -90,9 +157,21 @@ module JapaneseBusinessDays
 
     private
 
-    def fixed_holidays: (Integer year) -> Array[Holiday]
-    def calculated_holidays: (Integer year) -> Array[Holiday]
-    def happy_monday_holidays: (Integer year) -> Array[Holiday]
+    def normalize_date: (date_like date) -> Date
+    def validate_year!: (Integer year) -> void
+    def fixed_holiday?: (Date date) -> bool
+    def calculated_holiday?: (Date date) -> bool
+    def happy_monday_holiday?: (Date date) -> bool
+    def fixed_holidays_in_year: (Integer year) -> Array[Holiday]
+    def calculated_holidays_in_year: (Integer year) -> Array[Holiday]
+    def happy_monday_holidays_in_year: (Integer year) -> Array[Holiday]
+    def substitute_holidays_in_year: (Integer year, Array[Holiday] existing_holidays) -> Array[Holiday]
+    def vernal_equinox_day: (Integer year) -> Date
+    def autumnal_equinox_day: (Integer year) -> Date
+    def nth_weekday: (Integer year, Integer month, Integer nth, Integer weekday) -> Date
+    def ordinal_suffix: (Integer n) -> String
+    def weekday_name: (Integer weekday) -> String
+    def handle_calculation_error: (Exception error, String context) -> void
   end
 
   # 営業日計算クラス
@@ -109,32 +188,51 @@ module JapaneseBusinessDays
 
     def weekend?: (Date date) -> bool
     def non_business_day?: (Date date) -> bool
-    def normalize_date: (date_like date) -> Date
+    def validate_date!: (Date date) -> void
+    def validate_days!: (Integer days) -> void
+    def next_business_day_from: (Date date) -> Date
+    def handle_calculation_error: (Exception error, String context) -> void
   end
 
   # 日付拡張モジュール
   module DateExtensions
-    def add_business_days: (Integer days) -> Date
-    def subtract_business_days: (Integer days) -> Date
+    def add_business_days: (Integer days) -> self
+    def subtract_business_days: (Integer days) -> self
     def business_day?: () -> bool
     def holiday?: () -> bool
-    def next_business_day: () -> Date
-    def previous_business_day: () -> Date
+    def next_business_day: () -> self
+    def previous_business_day: () -> self
+
+    private
+
+    def normalize_to_date: () -> Date
+    def validate_days_parameter!: (untyped days) -> void
+    def convert_result_to_original_type: (Date result_date) -> self
   end
 
   # メインモジュールのクラスメソッド
   def self.configuration: () -> Configuration
   def self.configure: () { (Configuration) -> void } -> void
+  def self.reset_configuration!: () -> void
   def self.business_days_between: (date_like start_date, date_like end_date) -> Integer
   def self.business_day?: (date_like date) -> bool
   def self.holiday?: (date_like date) -> bool
   def self.holidays_in_year: (Integer year) -> Array[Holiday]
+  def self.add_business_days: (date_like date, Integer days) -> Date
+  def self.subtract_business_days: (date_like date, Integer days) -> Date
+  def self.next_business_day: (date_like date) -> Date
+  def self.previous_business_day: (date_like date) -> Date
 
   private
 
   def self.holiday_calculator: () -> HolidayCalculator
   def self.business_day_calculator: () -> BusinessDayCalculator
+  def self.reset_calculators!: () -> void
   def self.normalize_date: (date_like date) -> Date
+  def self.validate_not_nil!: (untyped value, String param_name) -> void
+  def self.validate_integer!: (untyped value, String param_name) -> void
+  def self.validate_year!: (Integer year) -> void
+  def self.validate_date_string!: (String date_string) -> void
 end
 
 # Date/Time/DateTimeクラスへの拡張
@@ -147,5 +245,10 @@ class Time
 end
 
 class DateTime
+  include JapaneseBusinessDays::DateExtensions
+end
+
+# ActiveSupport統合（Railsが利用可能な場合）
+class ActiveSupport::TimeWithZone
   include JapaneseBusinessDays::DateExtensions
 end

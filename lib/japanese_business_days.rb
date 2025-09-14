@@ -45,22 +45,46 @@ module JapaneseBusinessDays
     # @raise [InvalidArgumentError] ブロックが提供されない場合
     def configure
       unless block_given?
-        raise InvalidArgumentError, "Configuration block is required"
+        error = InvalidArgumentError.new(
+          "Configuration block is required",
+          parameter_name: "block",
+          suggestions: [
+            "Use JapaneseBusinessDays.configure { |config| ... }",
+            "Provide a block that yields the configuration object"
+          ]
+        )
+        Logging.log_error(error)
+        raise error
       end
+      
+      Logging.debug("Starting configuration", { method: "configure" })
       
       begin
         yield(configuration)
+        Logging.info("Configuration completed successfully")
       rescue => e
+        Logging.log_error(e, { method: "configure" })
+        
         case e
         when InvalidArgumentError, InvalidDateError, ConfigurationError
           raise e
         else
-          raise ConfigurationError, "Configuration error: #{e.message}"
+          enhanced_error = ConfigurationError.new(
+            "Configuration failed: #{e.message}",
+            context: { original_error: e.class.name },
+            suggestions: [
+              "Check the configuration block for syntax errors",
+              "Ensure all configuration values are of the correct type",
+              "Review the documentation for valid configuration options"
+            ]
+          )
+          raise enhanced_error
         end
       end
       
       # 設定変更後にキャッシュをクリア
       reset_calculators!
+      Logging.debug("Calculators reset after configuration change")
     end
 
     # 設定リセット（テスト用）
@@ -77,13 +101,37 @@ module JapaneseBusinessDays
     # @raise [InvalidArgumentError] 引数がnilまたは無効な型の場合
     # @raise [InvalidDateError] 日付形式が無効な場合
     def business_days_between(start_date, end_date)
+      Logging.debug("Calculating business days between dates", {
+        method: "business_days_between",
+        start_date: start_date,
+        end_date: end_date
+      })
+      
       validate_not_nil!(start_date, "start_date")
       validate_not_nil!(end_date, "end_date")
       
-      normalized_start = normalize_date(start_date)
-      normalized_end = normalize_date(end_date)
-      
-      business_day_calculator.business_days_between(normalized_start, normalized_end)
+      begin
+        normalized_start = normalize_date(start_date)
+        normalized_end = normalize_date(end_date)
+        
+        result = business_day_calculator.business_days_between(normalized_start, normalized_end)
+        
+        Logging.debug("Business days calculation completed", {
+          method: "business_days_between",
+          result: result,
+          normalized_start: normalized_start,
+          normalized_end: normalized_end
+        })
+        
+        result
+      rescue => e
+        Logging.log_error(e, {
+          method: "business_days_between",
+          start_date: start_date,
+          end_date: end_date
+        })
+        raise
+      end
     end
 
     # 営業日判定
@@ -213,10 +261,23 @@ module JapaneseBusinessDays
         validate_date_string!(date)
         Date.parse(date)
       else
-        raise InvalidArgumentError, "Invalid date type: #{date.class}. Expected Date, Time, DateTime, or String"
+        error = InvalidArgumentError.new(
+          "Invalid date type: #{date.class}. Expected Date, Time, DateTime, or String",
+          parameter_name: "date",
+          received_value: date,
+          expected_type: "Date, Time, DateTime, or String"
+        )
+        Logging.log_error(error)
+        raise error
       end
     rescue ArgumentError => e
-      raise InvalidDateError, "Invalid date format: #{date} - #{e.message}"
+      error = InvalidDateError.new(
+        "Invalid date format: #{date} - #{e.message}",
+        invalid_date: date,
+        context: { parse_error: e.message }
+      )
+      Logging.log_error(error)
+      raise error
     end
 
     # nil値の検証
@@ -225,7 +286,13 @@ module JapaneseBusinessDays
     # @raise [InvalidArgumentError] 値がnilの場合
     def validate_not_nil!(value, param_name)
       if value.nil?
-        raise InvalidArgumentError, "#{param_name} cannot be nil"
+        error = InvalidArgumentError.new(
+          "#{param_name} cannot be nil",
+          parameter_name: param_name,
+          received_value: nil
+        )
+        Logging.log_error(error)
+        raise error
       end
     end
 
@@ -235,7 +302,14 @@ module JapaneseBusinessDays
     # @raise [InvalidArgumentError] 値が整数でない場合
     def validate_integer!(value, param_name)
       unless value.is_a?(Integer)
-        raise InvalidArgumentError, "#{param_name} must be an Integer, got #{value.class}"
+        error = InvalidArgumentError.new(
+          "#{param_name} must be an Integer, got #{value.class}",
+          parameter_name: param_name,
+          received_value: value,
+          expected_type: Integer
+        )
+        Logging.log_error(error)
+        raise error
       end
     end
 
@@ -244,11 +318,25 @@ module JapaneseBusinessDays
     # @raise [InvalidArgumentError] 無効な年の場合
     def validate_year!(year)
       unless year.is_a?(Integer)
-        raise InvalidArgumentError, "Year must be an Integer, got #{year.class}"
+        error = InvalidArgumentError.new(
+          "Year must be an Integer, got #{year.class}",
+          parameter_name: "year",
+          received_value: year,
+          expected_type: Integer
+        )
+        Logging.log_error(error)
+        raise error
       end
       
       unless (1000..9999).include?(year)
-        raise InvalidArgumentError, "Year must be between 1000 and 9999, got #{year}"
+        error = InvalidArgumentError.new(
+          "Year must be between 1000 and 9999, got #{year}",
+          parameter_name: "year",
+          received_value: year,
+          context: { valid_range: "1000-9999" }
+        )
+        Logging.log_error(error)
+        raise error
       end
     end
 
@@ -257,11 +345,23 @@ module JapaneseBusinessDays
     # @raise [InvalidArgumentError] 空文字列の場合
     def validate_date_string!(date_string)
       if date_string.empty?
-        raise InvalidArgumentError, "Date string cannot be empty"
+        error = InvalidArgumentError.new(
+          "Date string cannot be empty",
+          parameter_name: "date_string",
+          received_value: date_string
+        )
+        Logging.log_error(error)
+        raise error
       end
       
       if date_string.strip.empty?
-        raise InvalidArgumentError, "Date string cannot be blank"
+        error = InvalidArgumentError.new(
+          "Date string cannot be blank",
+          parameter_name: "date_string",
+          received_value: date_string
+        )
+        Logging.log_error(error)
+        raise error
       end
     end
   end

@@ -33,8 +33,31 @@ module JapaneseBusinessDays
     # @param start_date [Date] 開始日
     # @param end_date [Date] 終了日
     # @return [Integer] 営業日数
+    # @raise [InvalidArgumentError] 無効な引数の場合
     def business_days_between(start_date, end_date)
-      raise NotImplementedError, "This method will be implemented in task 5.2"
+      validate_date!(start_date)
+      validate_date!(end_date)
+      
+      # 同じ日付の場合は0を返す
+      return 0 if start_date == end_date
+      
+      # 開始日が終了日より後の場合は負の値を返す
+      if start_date > end_date
+        return -business_days_between(end_date, start_date)
+      end
+      
+      count = 0
+      current_date = start_date
+      
+      # 開始日の翌日から終了日まで営業日をカウント
+      while current_date < end_date
+        current_date += 1
+        count += 1 if business_day?(current_date)
+      end
+      
+      count
+    rescue => e
+      handle_calculation_error(e, "business days calculation between #{start_date} and #{end_date}")
     end
 
     # 営業日加算

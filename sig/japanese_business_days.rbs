@@ -66,15 +66,19 @@ module JapaneseBusinessDays
     DEFAULT_MAX_CACHE_SIZE: Integer
 
     def initialize: (?max_cache_size: Integer) -> void
-    def cached_holidays_for_year: (Integer year) -> Array[Holiday]
+    def cached_holidays_for_year: (Integer year) -> Array[Holiday]?
     def store_holidays_for_year: (Integer year, Array[Holiday] holidays) -> void
     def clear_cache: () -> void
     def clear_cache_for_year: (Integer year) -> void
+    def cache_size: () -> Integer
+    def cached_years: () -> Array[Integer]
 
     private
 
     def manage_cache_size: () -> void
     def cache_hit?: (Integer year) -> bool
+    def validate_year!: (Integer year) -> void
+    def validate_holidays!: (Array[Holiday] holidays) -> void
   end
 
   # 祝日計算クラス

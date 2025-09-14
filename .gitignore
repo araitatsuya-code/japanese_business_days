@@ -12,3 +12,6 @@
 
 # Kiro specs and configuration
 /.kiro/
+
+# Built gem files
+*.gem
